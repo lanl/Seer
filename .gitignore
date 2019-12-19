@@ -30,3 +30,22 @@
 *.exe
 *.out
 *.app
+
+# OSX
+.DS_Store
+
+# Project
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# Python
+__pycache__
+*.swp
+*.pyc
+
+# CMakelists
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake

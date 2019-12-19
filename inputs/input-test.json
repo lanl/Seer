@@ -1,0 +1,28 @@
+{
+	"mpi-profiling" : true,
+
+	"mochi" : true,
+	"mochi-database" :
+	{
+		"name" : "foo1",
+		"db-type" : "ldb",
+		"name" : "test",
+		"conn-type" : "na+sm",
+		"address" : "na+sm://10426/0",
+		"multiplex" : 1
+	},
+
+
+	"papi" : true,
+	"papi_counters" : 
+	[ 
+		"PAPI_L1_DCH", 
+		"PAPI_L1_DCH", 
+		"PAPI_L1_DCA", 
+		"PAPI_FP_OPS", 
+		"PAPI_MEM_SCY", 
+		"PAPI_L1_DCM", 
+		"PAPI_L1_ICM", 
+		"PAPI_L1_LDM" 
+	]
+}
