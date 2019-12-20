@@ -43,15 +43,25 @@ InWrap is a lightweight insitu wrapper library adding insitu capabilities to sim
 
 
 ## Building
+The following environment needs to be activated as follows:
+
 ~~~bash
+spack env activate scidac
+spack load -r margo
+spack load -r sdskeyval
+spack load vtk
+~~~
+
+~~~bash
+cd src
 mkdir build
 cd build
 ccmake ..
 ~~~
 
 
-
 ## Running
+There are two parts of running the insitu package, i) running the sim, and ii) running the client
 
 ### Env setup to run sim
 ~~~bash
@@ -61,12 +71,11 @@ spack load -r sdskeyval
 spack load vtk
 ~~~
 
-### Env setup to run client
+### Env setup to run python client
 ~~~bash
 spack env activate scidac
 spack load -r py-sdskv
 ~~~
-
 
 
 #### server:

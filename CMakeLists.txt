@@ -1,12 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(InSituVTKWriters)
+project(InWrap)
 
 set (CMAKE_CXX_STANDARD 11)
 include_directories(${CMAKE_SOURCE_DIR}/InWrap)
 include_directories(${CMAKE_SOURCE_DIR}/InWrap/utils)
 include_directories(${CMAKE_SOURCE_DIR}/InWrap/vtkStructures)
-#include_directories(${CMAKE_SOURCE_DIR}/testing)
 
 
 # link shared lib with full rpath

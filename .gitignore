@@ -49,3 +49,7 @@ CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
+
+#build
+build
+*build*
