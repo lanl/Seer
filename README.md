@@ -12,7 +12,7 @@ InWrap is a lightweight insitu wrapper library adding insitu capabilities to sim
  * [Catalyst](https://www.paraview.org/files/v5.5/Catalyst-v5.5.2-Base-Enable-Python-Essentials-Extras-Rendering-Base.tar.gz)
 
 
-## Setup
+## Env Setup
  *  This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed, modify (or create) packages.yaml to contain the following:
 	~~~bash
 	packages:
@@ -22,6 +22,7 @@ InWrap is a lightweight insitu wrapper library adding insitu capabilities to sim
 
  * Setting up Mochi
 	~~~bash
+	spack create env inwrap
 	git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
 	spack repo add sds-repo
 	spack install margo
@@ -34,7 +35,6 @@ InWrap is a lightweight insitu wrapper library adding insitu capabilities to sim
 	spack install vtk (spack install vtk ^hdf5+hl+mpi to bypass error)
 	~~~
 
-
  * On a PC, also do this:
 	~~~bash
 	spack install openmpi
@@ -46,7 +46,7 @@ InWrap is a lightweight insitu wrapper library adding insitu capabilities to sim
 The following environment needs to be activated as follows:
 
 ~~~bash
-spack env activate scidac
+spack env activate inwrap
 spack load -r margo
 spack load -r sdskeyval
 spack load vtk
@@ -65,7 +65,7 @@ There are two parts of running the insitu package, i) running the sim, and ii) r
 
 ### Env setup to run sim
 ~~~bash
-spack env activate scidac
+spack env activate inwrap
 spack load -r margo
 spack load -r sdskeyval
 spack load vtk
@@ -73,7 +73,7 @@ spack load vtk
 
 ### Env setup to run python client
 ~~~bash
-spack env activate scidac
+spack env activate inwrap
 spack load -r py-sdskv
 ~~~
 

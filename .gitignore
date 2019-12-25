@@ -53,3 +53,4 @@ cmake_install.cmake
 #build
 build
 *build*
+.vscode
