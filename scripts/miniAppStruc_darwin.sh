@@ -29,12 +29,12 @@ echo $ip
 
 
 # Create 
-mpirun $pythonExe $projectpath/InWrap/python-utils/createJson.py $ip $projectpath/InWrap/inputs/input-test-structured.json
+mpirun $pythonExe $projectpath/InWrap/python-utils/createJson.py $ip $projectpath/inputs/input-test-structured.json
 
 
 # Execute jobs in parallel: server + demoApp
-mpirun $pythonExe $projectpath/InWrap/python-utils/launchServer.py $projectpath/InWrap/inputs/input-test-structured.json &
-mpirun $projectpath/build/demoApps/miniAppStructured --insitu $projectpath/InWrap/inputs/input-test-structured.json
+mpirun $pythonExe $projectpath/InWrap/python-utils/launchServer.py $projectpath/inputs/input-test-structured.json &
+mpirun $projectpath/build/demoApps/miniAppStructured --insitu $projectpath/inputs/input-test-structured.json
 
 ## Terminate the server
-mpirun $pythonExe $projectpath/InWrap/python-utils/shutDownServer.py $projectpath/InWrap/inputs/input-test-structured.json 
+#mpirun $pythonExe $projectpath/InWrap/python-utils/shutDownServer.py $projectpath/inputs/input-test-structured.json 
