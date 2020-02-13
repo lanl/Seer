@@ -287,7 +287,6 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 
 	// Papi
   #ifdef PAPI_ENABLED
-
 	if ( jsonInput.find("papi") != jsonInput.end() )
 	{
 		papi_on = jsonInput["papi"];
@@ -314,6 +313,7 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 	{
 		mochi_on = jsonInput["mochi"];
 
+		// Read in mochi server parameters to connect to it
 		if (mochi_on)
 		{
 			if ( jsonInput.find("mochi-database") != jsonInput.end() )
@@ -342,6 +342,7 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		}
 
 
+		// push some values to the mochi server
 		if (mochi_on)
 		{
 			log << "mochi on" << std::endl;
@@ -353,17 +354,22 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 				std::string value = std::to_string( numRanks );
 				mochi.putKeyValue(key, value);
 
-				key   = "num_papi_counters";
-				value = std::to_string( papiEvent.getNumEvents() );
-				mochi.putKeyValue(key, value);
-
-				int papi_counter_count = 0;
-				for (int e=0; e<papiEvent.getNumEvents(); e++)
-				{ 
-					key   = "papi_counter_" + std::to_string( e );
-					value = papiEvent.getPapiEventName(e);
+			   #ifdef PAPI_ENABLED
+				if (papi_on)
+				{
+					key   = "num_papi_counters";
+					value = std::to_string( papiEvent.getNumEvents() );
 					mochi.putKeyValue(key, value);
+
+					int papi_counter_count = 0;
+					for (int e=0; e<papiEvent.getNumEvents(); e++)
+					{ 
+						key   = "papi_counter_" + std::to_string( e );
+						value = papiEvent.getPapiEventName(e);
+						mochi.putKeyValue(key, value);
+					}
 				}
+			  #endif
 
 				int keyExists = mochi.existsKey("numRanks");
 				//std::cout << "!!!!!!!!!!!!!!!!!!mochi.existsKey(numRanks) "<< keyExists << std::endl;
@@ -384,6 +390,13 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		{
 			if ( isPythonFile( jsonInput["catalyst-scripts"][i] ))
 				catalyst_scripts.push_back( jsonInput["catalyst-scripts"][i] );
+		}
+
+		if (catalyst_on)
+		{
+			//std::cout << "catalyst ... " << std::endl;
+			cat.init(catalyst_scripts.size(), catalyst_scripts);
+			//std::cout << "catalyst inited" << std::endl;
 		}
 	}
 
@@ -412,7 +425,7 @@ inline int InsituWrap::timestepInit()
 	if (!insitu_on)
 		return 0;
 
-
+/*
   #ifdef MOCHI_ENABLED
 	if (myRank == 0)
 	{
@@ -449,6 +462,8 @@ inline int InsituWrap::timestepInit()
 		}
 
 
+
+		
 		// Remove Papi counters
 		std::pair<std::vector<std::string>,std::vector<std::string>> keysToDel = 
 					mochi.listKeysWithPrefix("REMOVE_PAPI_COUNTER","REMOVE_PAPI_COUNTER");
@@ -477,6 +492,7 @@ inline int InsituWrap::timestepInit()
 	 			mochi.eraseKey( keysToDel.first[i] );
 			}
 		}
+		
 
 
   	  #endif
@@ -494,9 +510,14 @@ inline int InsituWrap::timestepInit()
 	}
   #endif
 
+*/
+
   #ifdef PAPI_ENABLED
-	perf.clear();
-	papiEvent.startPapi();
+	if (papi_on)
+	{
+		perf.clear();
+		papiEvent.startPapi();
+	}
   #endif
 
 	if (mpi_profiling_on)
@@ -568,6 +589,139 @@ inline int InsituWrap::timestepExecute(int ts)
 		MPI_Pcontrol(3);
 
 	currentTimestep++;
+
+
+	// Read in new values
+  #ifdef MOCHI_ENABLED
+	if (myRank == 0)
+	{
+		if ( mochi.existsKey("NEW_KEY") )
+		{
+
+	  	  #ifdef PAPI_ENABLED
+
+			// Add Papi counters
+			{
+				std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("ADD_PAPI");
+
+				if (foundKeys.size() > 0)
+				{
+					std::vector<std::string> foundVals;
+					for (int i=0; i<foundKeys.size(); i++)
+						foundVals.push_back( mochi.getValue(foundKeys[i]) );
+
+
+					for (int i=0; i<foundVals.size(); i++)
+					{
+						if ( !papiEvent.addPapiEvent(foundVals[i]) )
+						{
+		 					//std::cout << "Adding event " << keyName << " failed!" << std::endl;
+						}
+						else
+						{
+							mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
+						}
+
+						// Remove that key
+						mochi.eraseKey( foundKeys[i] );
+					}
+				}
+			}
+
+
+			// Remove Papi counters
+			{
+				std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("REMOVE_PAPI");
+
+				if (foundKeys.size() > 0)
+				{
+					std::vector<std::string> foundVals;
+					for (int i=0; i<foundKeys.size(); i++)
+						foundVals.push_back( mochi.getValue(foundKeys[i]) );
+
+
+					for (int i=0; i<foundVals.size(); i++)
+					{
+						if ( !papiEvent.removePapiEvent(foundVals[i]) )
+						{
+		 					//std::cout << "Adding event " << keyName << " failed!" << std::endl;
+						}
+						else
+						{
+							mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
+						}
+
+						// Remove that key
+						mochi.eraseKey( foundKeys[i] );
+					}
+				}
+			}
+	  	  #endif //PAPI_ENABLED
+
+
+		  #ifdef CATALYST_ENABLED
+			//catalyst_scripts
+			if (catalyst_on)
+			{
+				// Add Catalyst script
+				{
+					std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("ADD_CATALYST_SCRIPT");
+
+					if (foundKeys.size() > 0)
+					{
+						std::vector<std::string> foundVals;
+						for (int i=0; i<foundKeys.size(); i++)
+							foundVals.push_back( mochi.getValue(foundKeys[i]) );
+
+
+						for (int i=0; i<foundVals.size(); i++)
+						{
+							catalyst_scripts.push_back(foundVals[i]);	// Add script
+							mochi.eraseKey( foundKeys[i] );				// Remove that key
+						}
+					}
+				}
+
+
+				// Remove Catalyst script
+				{
+					std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("REMOVE_CATALYST_SCRIPT");
+
+					if (foundKeys.size() > 0)
+					{
+						std::vector<std::string> foundVals;
+						for (int i=0; i<foundKeys.size(); i++)
+							foundVals.push_back( mochi.getValue(foundKeys[i]) );
+
+
+
+
+						for (int i=0; i<foundVals.size(); i++)
+						{
+							// Remove script
+							for (int j=0; j<catalyst_scripts.size(); j++)
+								if (catalyst_scripts[j] == std::string(foundVals[i]))
+								{
+									 catalyst_scripts.erase(catalyst_scripts.begin()+j);
+									 break;
+								}
+
+							mochi.eraseKey( foundKeys[i] );				// Remove that key
+						}
+					}
+				}
+
+				// Reinitialize catalyst
+				cat.init(catalyst_scripts.size(), catalyst_scripts);
+			}
+	      #endif //CATALYST_ENABLED
+		}
+	}
+  #endif //MOCHI_ENABLED
+  
+
+
+  
 
 
 	return 1;

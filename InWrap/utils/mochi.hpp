@@ -45,13 +45,18 @@ class MochiInterface
 
 
 	int getValue(std::string key, std::string &value);
+	std::string getValue(std::string key);
 	int putKeyValue(std::string key, std::string value);
 	int existsKey(std::string key);
 	int eraseKey(std::string key);
 
-	std::pair<std::vector<std::string>,std::vector<std::string>>
-	listKeysWithPrefix(std::string start_key, std::string prefix,
-            hg_size_t max_keys=64, hg_size_t key_size=0, hg_size_t val_size=0);
+	std::vector<std::string> listKeys(
+            const std::string& start_key,
+            const std::string& prefix,
+            hg_size_t max_keys=2048,
+            hg_size_t key_size=0);
+
+	std::vector<std::string> listKeysWithPrefix(std::string keyStart);
 };
 
 
@@ -168,98 +173,65 @@ inline int MochiInterface::putKeyValue(std::string key, std::string value)
 }
 
 
-inline std::pair<std::vector<std::string>,std::vector<std::string>> 
-		MochiInterface::listKeysWithPrefix(
-            std::string start_key,
-            std::string prefix,
-            hg_size_t max_keys,
-            hg_size_t key_size,
-            hg_size_t val_size) {
+inline std::vector<std::string> MochiInterface::listKeysWithPrefix(std::string keyStart)
+{
+	std::vector<std::string> keys = listKeys("", "");
+	std::vector<std::string> filteredKeys;
+	for (size_t i=0; i<keys.size(); i++)
+	{
+		if (keys[i].rfind(keyStart,0) == 0)
+			filteredKeys.push_back(keys[i]);
+	}
+}
 
-    int ret;
-    std::vector<hg_size_t> key_sizes(max_keys, key_size);
-    std::vector<hg_size_t> val_sizes(max_keys, val_size);
+inline std::vector<std::string> MochiInterface::listKeys(
+            const std::string& start_key,
+        	const std::string& prefix,
+        	hg_size_t max_keys,
+        	hg_size_t key_size)
+{
+	int ret;
+    if(max_keys == 0)
+        return std::vector<std::string>();
 
-    std::pair<std::vector<std::string>,std::vector<std::string>> result;
-    if (max_keys == 0)
-        return result;
-
-    result.first.resize(max_keys);
-    result.second.resize(max_keys);
-
-    std::vector<std::string>& keys = result.first;
+	std::vector<hg_size_t> key_sizes(max_keys, key_size);
+	std::vector<std::string> keys(max_keys);
     std::vector<void*> keys_addr(max_keys, nullptr);
-    std::vector<std::string>& vals = result.second;
-    std::vector<void*> vals_addr(max_keys, nullptr);
 
-    if (key_size == 0 || val_size == 0) 
-    {
-    	try
-    	{
-        ret = sdskv_list_keyvals_with_prefix(kvph, db_id,
-                (const void *) start_key.data(), start_key.size(),
-                (const void *) prefix.data(), prefix.size(),
+    if(key_size == 0) {
+        ret = sdskv_list_keys_with_prefix(kvph, db_id,
+                start_key.data(), start_key.size(),
+                prefix.data(), prefix.size(),
                 nullptr,
                 key_sizes.data(),
-                nullptr,
-                val_sizes.data(),
                 &max_keys);
-       	}
-       	catch(...)
-       	{
-       		std::cout << "###########" << std::endl;
-       	}
-
-        if (ret != SDSKV_SUCCESS && ret != SDSKV_ERR_SIZE) 
-        {
-        	//throw std::runtime_error(std::string("sdskv_list_keys_with_prefix returned ")+std::to_string(ret));
-            std::cerr << std::string("sdskv_list_keyvals_with_prefix returned ") + std::to_string(ret) << std::endl;
+        if(ret != SDSKV_SUCCESS && ret != SDSKV_ERR_SIZE) {
+            throw std::runtime_error(std::string("sdskv_list_keys_with_prefix returned ")+std::to_string(ret));
         }
     }
 
-    // std::cout << "key_sizes.size: " << key_sizes.size() << std::endl;
-    // std::cout << "val_sizes.size: " << val_sizes.size() << std::endl;
-    // std::cout << "max_keys: " << max_keys << std::endl;
-    
-
-    for (unsigned i = 0; i < max_keys; i++) 
-    {
-        keys[i].resize(key_sizes[i]);
+    for(unsigned i = 0; i < max_keys; i++) {
+    	keys[i].resize(key_sizes[i]);
         keys_addr[i] = const_cast<char*>(keys[i].data());
-        vals[i].resize(val_sizes[i]);
-        vals_addr[i] = const_cast<char*>(vals[i].data());
     }
 
-    try
-    {
-	    ret = sdskv_list_keyvals_with_prefix(kvph, db_id,
-	            (const void *) start_key.data(), start_key.size(),
-	            (const void *) prefix.data(), prefix.size(),
-	            keys_addr.data(),
-	            key_sizes.data(),
-	            vals_addr.data(),
-	            val_sizes.data(),
-	            &max_keys);
-	}
-	catch(...)
-	{
-		std::cout << "!!!!!!!!!!" << std::endl;
-	}
-
-	//std::cout << "=================================================" << std::endl;
-
+    ret = sdskv_list_keys_with_prefix(kvph, db_id,
+            start_key.data(), start_key.size(),
+            prefix.data(), prefix.size(),
+            keys_addr.data(),
+            key_sizes.data(),
+            &max_keys);
     keys.resize(max_keys);
-    vals.resize(max_keys);
     for(unsigned i = 0; i < max_keys; i++) {
         keys[i].resize(key_sizes[i]);
-        vals[i].resize(val_sizes[i]);
     }
 
-    if(ret != SDSKV_SUCCESS)
-    	//throw std::runtime_error(std::string("sdskv_list_keys_with_prefix returned ")+std::to_string(ret));
-        std::cerr << std::string("sdskv_list_keys_with_prefix returned ") + std::to_string(ret) << std::endl;
+    std::cout << "max_keys: " << max_keys << std::endl;
 
-    return result;
+    if(ret != SDSKV_SUCCESS)
+        throw std::runtime_error(std::string("sdskv_list_keys_with_prefix returned ")+std::to_string(ret));
+
+    return keys;
 }
 
 
@@ -292,6 +264,13 @@ inline int MochiInterface::existsKey(std::string key)
 	}
 
 	return exists;
+}
+
+inline std::string MochiInterface::getValue(std::string key)
+{
+	std::string val;
+	getValue(key, val);
+	return val;
 }
 
 

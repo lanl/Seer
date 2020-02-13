@@ -49,7 +49,8 @@ The following environment needs to be activated as follows:
 spack env activate inwrap
 spack load -r margo
 spack load -r sdskeyval
-spack load vtk
+spack load paraview@5.7.0
+spack load /6uyrlxs #mesa
 ~~~
 
 ~~~bash
@@ -66,9 +67,10 @@ There are two parts of running the insitu package, i) running the sim, and ii) r
 ### Env setup to run sim
 ~~~bash
 spack env activate inwrap
-spack load -r margo
+spack load -r /ayohgie #margo
 spack load -r sdskeyval
-spack load vtk
+spack load paraview@5.7.0
+spack load /6uyrlxs #mesa
 ~~~
 
 ### Env setup to run python client
