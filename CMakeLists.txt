@@ -7,6 +7,8 @@ include_directories(${CMAKE_SOURCE_DIR}/InWrap)
 include_directories(${CMAKE_SOURCE_DIR}/InWrap/utils)
 include_directories(${CMAKE_SOURCE_DIR}/InWrap/vtkStructures)
 
+set (INWRAP_LIBS "")
+
 
 # link shared lib with full rpath
 set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -27,29 +29,30 @@ set (BUILD_SHARED_LIBS "OFF" CACHE BOOL "Build a shared library")
 # Catalyst
 option(ENABLE_CATALYST "Link the sim with Catalyst for in situ" OFF)
 if (ENABLE_CATALYST)
-	find_package(ParaView REQUIRED COMPONENTS vtkPVPythonCatalyst)
+  	find_package(ParaView REQUIRED)
 
-	if (NOT ParaView_FOUND)
-		message(FATAL_ERROR "Catalyst analysis components require Catalyst build"
-			"(or install directory. Please set ParaView_DIR to point to " "directory"
-			"containing `ParaViewConfig.cmake`.")
-	endif()
+  	if (NOT TARGET ParaView::PythonCatalyst)
+    	message(STATUS
+      		"Skipping example: ${CMAKE_PROJECT_NAME} requires ParaView to be built "
+      		"with Catalyst and Python support enabled. Please rebuild ParaView (or "
+      		"point to a different build of ParaView) with PARAVIEW_USE_PYTHON set "
+      		"to TRUE")
+    	return ()
+ 	 endif()
 
-	if (NOT PARAVIEW_USE_MPI)
-		message(SEND_ERROR "ParaView must be built with MPI enabled")
-	endif()
+  	if (NOT PARAVIEW_USE_MPI)
+    	message(STATUS
+      		"Skipping example: ${CMAKE_PROJECT_NAME} requires ParaView to be built "
+      		"with MPI support enabled. Please rebuild ParaView (or point to a "
+      		"different build of ParaView) with PARAVIEW_USE_MPI set to TRUE")
+    	return ()
+  	endif ()
 
-	include("${PARAVIEW_USE_FILE}")
+  	message(STATUS "Found Paraview: ${ParaView_DIR}")
+  	message(STATUS "IO with Paraview Catalyst enabled" )
 
-	
-	set(CATALYST_ENABLED ON)
 
-	include ( "${ParaView_DIR}/VTKConfig.cmake" )
-	add_definitions(-DHAVE_VTK)
-	set(HAVE_VTK ON)
-
-	set(VTK_FOUND ON CACHE BOOL "Link to VTK")
-	set(VTK_INCLUDED ON CACHE BOOL "Link to VTK")
+  	list( APPEND INWRAP_LIBS ParaView::PythonCatalyst VTK::CommonDataModel VTK::ParallelMPI VTK::IOParallelXML)
 
 	add_definitions(-DCATALYST_ENABLED)
 endif()
@@ -131,15 +134,15 @@ endif()
 ## Not Optional!!!
 
 # VTK
-if (NOT HAVE_VTK)
-	find_package(VTK REQUIRED)
-	if (VTK_FOUND)
-		include(${VTK_USE_FILE})
-		add_definitions(-DHAVE_VTK)
-	else()
-		message(FATAL_ERROR "Could not find vtk!!!") 
-	endif()
-endif()
+#if (NOT HAVE_VTK)
+#	find_package(VTK REQUIRED)
+#	if (VTK_FOUND)
+#		include(${VTK_USE_FILE})
+#		add_definitions(-DHAVE_VTK)
+#	else()
+#		message(FATAL_ERROR "Could not find vtk!!!") 
+#	endif()
+#endif()
 
 
 # MPI
