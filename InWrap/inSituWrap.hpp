@@ -715,6 +715,9 @@ inline int InsituWrap::timestepExecute(int ts)
 				cat.init(catalyst_scripts.size(), catalyst_scripts);
 			}
 	      #endif //CATALYST_ENABLED
+
+
+			mochi.eraseKey("NEW_KEY");
 		}
 	}
   #endif //MOCHI_ENABLED
