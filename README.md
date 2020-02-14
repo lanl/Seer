@@ -98,13 +98,13 @@ mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # di
 * Remote:
 ~~~bash
 jupyter password: password	                            # if needed
-jupyter-notebook --no-browser --port=8898 --ip=0.0.0.0
+jupyter-notebook --no-browser --port=8891 --ip=0.0.0.0
 ~~~
 
 * Local:  
 ssh -N -f -L port:host:hostport username@cluster e.g.
 ~~~bash
-ssh -N -f -L 8898:cn36:8898 pascalgrosset@darwin-fe
+ssh -N -f -L 8891:cn36:8891 pascalgrosset@darwin-fe
 ~~~
 
 In Browser:

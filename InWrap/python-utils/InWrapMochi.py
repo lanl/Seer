@@ -8,16 +8,16 @@ import random
 class InWrapMochi:
 
 	def __init__(self, transport, address, p_id, db_n):
-		engine = Engine(transport)
-		server_addr = address
-		provider_id = p_id
-		db_name = db_n
+		self.engine = Engine(transport)
+		self.server_addr = address
+		self.provider_id = p_id
+		self.db_name = db_n
 
 		# init the engine
-		self.client = SDSKVClient(engine)
-		self.addr = engine.lookup(server_addr)
-		provider_handle = self.client.create_provider_handle(self.addr, provider_id)
-		self.db = provider_handle.open(db_name)
+		self.client = SDSKVClient(self.engine)
+		self.addr = self.engine.lookup(self.server_addr)
+		self.provider_handle = self.client.create_provider_handle(self.addr, self.provider_id)
+		self.db = self.provider_handle.open(self.db_name)
 
 		# create a dictionary for values
 		self.command_dic = {}

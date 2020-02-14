@@ -659,7 +659,11 @@ inline int InsituWrap::timestepExecute(int ts)
 			}
 
 			// Reinitialize catalyst
+			//std::cout << "cat.finalize()" << std::endl;
+			//cat.finalize();
+			std::cout << "cat.init()" << std::endl;
 			cat.init(catalyst_scripts.size(), catalyst_scripts);
+			std::cout << "cat.init() done!!!" << std::endl;
 		}
       #endif //CATALYST_ENABLED
 

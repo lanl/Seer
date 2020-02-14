@@ -1,7 +1,7 @@
 {
     "mochi": true,
     "mochi-database": {
-        "address": "ofi+tcp://192.168.101.195",
+        "address": "ofi+tcp://192.168.101.184",
         "port": ":1234",
         "conn-type": "ofi+tcp",
         "db-type": "ldb",

@@ -286,9 +286,12 @@ inline int MochiInterface::getValue(std::string key, std::string &value)
 	size_t value_size = max_value_size;
 	std::vector<char> v(max_value_size);
 
+
 	int ret = sdskv_get(kvph, db_id,
 				(const void *)key.data(), key.size(),
 				(void *)v.data(), &value_size);
+
+	std::cout << "value size: " << value_size << std::endl;
 
 	if (ret != 0) 
 	{
@@ -297,7 +300,8 @@ inline int MochiInterface::getValue(std::string key, std::string &value)
 	}
 
 
-	std::string s(v.begin(), v.end());
+	//std::string s(v.begin(), v.end());
+	std::string s(v.begin(), v.begin()+value_size);
 	value = s;
 
 	return 1;

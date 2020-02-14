@@ -148,7 +148,7 @@ inline void CatalystAdaptor::init(int numScripts, std::vector<std::string> scrip
 {
 	Timer clock(1);
 
-	Processor = NULL;
+	//Processor = NULL;
 
 	std::cout << "CatalystAdaptor::init(...)" << std::endl;
 
@@ -185,7 +185,10 @@ inline void CatalystAdaptor::init()
 		std::cout << "CatalystAdaptor::init()   vtkSmartPointer<vtkCPProcessor>::Initialize()" << std::endl;
 	}
 	else
+	{
+		std::cout << "CatalystAdaptor::init() - RemoveAllPipelines()" << std::endl;
 		Processor->RemoveAllPipelines();
+	}
 
 	log << "CatalystAdaptor init took: " << clock.stop(1) << " s" << std::endl;
 }
@@ -199,24 +202,39 @@ inline int CatalystAdaptor::addPipelines(int numScripts, std::vector<std::string
 	int success = 1;
 	for (int i=0; i<numScripts; i++)
 	{
+		std::cout << "i:" << i << std::endl;
 		// Skipping files that do not end in .py
 		if ( !( scripts[i].substr( scripts[i].size()-3,3 ) == ".py" ) )
+		{
+			std::cout << "scripts[i]" << scripts[i] << "is invalid" <<std::endl;
 			continue;
+		}
 
 		// Check if the file exist
 		std::ifstream inputFile(scripts[i].c_str());
 		if (!inputFile)
+		{
+			std::cout << "scripts[i]" << scripts[i] << "does not exist" <<std::endl;
 			continue;
+		}
 
+
+		std::cout << "before initialize" << scripts[i] <<std::endl;
 		vtkNew<vtkCPPythonScriptPipeline> pipeline;
 		if (pipeline->Initialize(scripts[i].c_str()) )
 		{
+			std::cout << "before add pipeline" << scripts[i] <<std::endl;
 			Processor->AddPipeline(pipeline.GetPointer());
 			numValidScripts++;
+			std::cout << "scripts[i]" << scripts[i] << "added to pipeline" <<std::endl;
+		}
+		else
+		{
+			std::cout << "scripts[i]" << scripts[i] << "could not be added to pipeline" <<std::endl;
 		}
 	}
 
-	log << "CatalystAdaptor addPipelines took: " << clock.stop(1) << " s" << std::endl;
+	std::cout << "CatalystAdaptor addPipelines took: " << clock.stop(1) << " s" << std::endl;
 
 	//std::cout << "numValidScripts: " << numValidScripts << std::endl;
 	return numValidScripts++;
@@ -234,6 +252,8 @@ inline void CatalystAdaptor::setWholeExtents(int minX, int maxX, int minY, int m
 inline void CatalystAdaptor::finalize()
 {
 	Timer clock(1);
+
+	Processor->RemoveAllPipelines();
 
 	Processor->Finalize();
 	if (Processor)
