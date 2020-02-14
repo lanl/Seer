@@ -179,9 +179,15 @@ inline std::vector<std::string> MochiInterface::listKeysWithPrefix(std::string k
 	std::vector<std::string> filteredKeys;
 	for (size_t i=0; i<keys.size(); i++)
 	{
+		//std::cout << keys[i] << std::endl;
 		if (keys[i].rfind(keyStart,0) == 0)
+		{
+			std::cout << "found:" << keys[i] << std::endl;
 			filteredKeys.push_back(keys[i]);
+		}
 	}
+
+	return filteredKeys;
 }
 
 inline std::vector<std::string> MochiInterface::listKeys(
@@ -276,7 +282,7 @@ inline std::string MochiInterface::getValue(std::string key)
 
 inline int MochiInterface::getValue(std::string key, std::string &value)
 {
-	size_t max_value_size = 24;
+	size_t max_value_size = 2048;
 	size_t value_size = max_value_size;
 	std::vector<char> v(max_value_size);
 

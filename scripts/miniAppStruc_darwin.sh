@@ -4,7 +4,7 @@
 #SBATCH -p galton
 
 export MPIP="-t 10.0"
-projectpath=/projects/insituperf/InSituWriters
+projectpath=/projects/insituperf/InWrap
 pythonExe=/home/pascalgrosset/miniconda3/bin/python
 
 # init spack
@@ -13,7 +13,7 @@ source $SPACK_ROOT/share/spack/setup-env.sh
 
 # load modules
 source $projectpath/InWrap/scripts/env_setup_darwin.sh
-source $projectpath/InWrap/scripts/env_setup_spack.sh
+#source $projectpath/InWrap/scripts/env_setup_spack.sh
 
 
 module list

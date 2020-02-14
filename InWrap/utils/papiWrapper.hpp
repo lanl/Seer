@@ -56,7 +56,7 @@ class PAPIWrapper
   	PAPIWrapper();
   	~PAPIWrapper();
 
-  	int getNumEvents(){ return numEvents; }
+  	int getNumEvents(){ return registeredEvent.size(); }
 
   	int initPapi();
   	int createPapiEventSet();
@@ -193,15 +193,16 @@ inline int PAPIWrapper::removePapiEvent(int eventCode)
 	if (PAPI_remove_event(eventSet, eventCode) != PAPI_OK)
 	{
 		std::cout << "event: " << eventCode << ", " << eventCodeStr  << " was not not removed " << PAPI_add_event(eventSet, eventCode) << std::endl;;
-		return handlePAPIError("PAPI_add_event");
+		return handlePAPIError("PAPI_remove_event");
 	}
 	
 	// Remove from registered papi counters
 	for (int i=0; i<registeredEvent.size(); i++)
 		if (registeredEvent[i] == std::string(eventCodeStr))
 		{
-			 registeredEvent.erase (registeredEvent.begin()+i);
-			 break;
+			std::cout << eventCodeStr  << " found and removing" << std::endl;
+			registeredEvent.erase(registeredEvent.begin()+i);
+			break;
 		}
 
 	std::cout << "event: " << eventCode << ", " << eventCodeStr  << " successfully removed!" << std::endl;
@@ -224,7 +225,10 @@ inline int PAPIWrapper::addPapiEvent(std::string eventName)
 		return handlePAPIError("PAPI_event_name_to_code");
 	}
 	else
+	{
 		addPapiEvent(eventCode);
+		std::cout << eventName << " was added!!!" << std::endl;
+	}
 
 	return 1;
 }

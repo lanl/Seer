@@ -4,6 +4,8 @@
 #include <chrono>
 #include <thread>
 #include <cassert>
+#include <chrono>
+#include <thread>
 
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
@@ -35,7 +37,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
 	int numPoints = 100;
-	int numTimesteps = 25;
+	int numTimesteps = 100;
 
 	srand(time(NULL) + myRank);
 
@@ -168,19 +170,26 @@ int main(int argc, char *argv[])
 			temp.addScalarCellData("cell-data-fact", numCells, cellDataFact);
 			temp.addScalarCellData("_rank", numCells, cellRankData);
 
+		  #ifdef  CATALYST_ENABLED
+			if (insitu.isCatalystOn())
+			{
+				insitu.cat.coProcess(temp.getGrid(), t / 1.0, t, t == (numTimesteps - 1));
+			}
+		  #endif //CATALYST_ENABLED
+
 			insitu.timestepExecute(t);
 
 			//insitu.recordEvent( "comp-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( factComputationTimer.getDuration() ) );
 			//insitu.recordEvent( "loop-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( mainLoopTimer.getDuration() ) );
 
 	
-			temp.writeParts(numRanks, myRank, myRank, "testStructuredMPI_" + std::to_string(t));
+			//temp.writeParts(numRanks, myRank, myRank, "testStructuredMPI_" + std::to_string(t));
 
-			InWrap::writeLog( "myLog_" + std::to_string(myRank) + ".log" , msgLog.str());
+			InWrap::writeLog( "myLog_" + std::to_string(myRank), msgLog.str());
 		}
 	  #endif
 
-
+		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 

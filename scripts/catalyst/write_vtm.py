@@ -16,8 +16,8 @@ padding = 4
 # will compress better, but will take more time. The lz4 scheme will not
 # compress as well, but will be faster to compress. In general, the zlib option
 # will not add that much more time, and is recommended.
-#compression = ''      # no compression
-compression = 'ZLib'   # zlib compression
+compression = ''      # no compression
+#compression = 'ZLib'   # zlib compression
 #compression = 'LZ4'   # lz4 compression
 
 # the frequency to output everything
@@ -59,7 +59,7 @@ def CreateCoProcessor():
         writer_class = servermanager.writers.XMLMultiBlockDataWriter
         filename = output_name + '_%t.vtm'
       else:
-        print "COPROCESSOR: Don't know how to create a writer for a ", grid.GetClassName()
+        print("COPROCESSOR: Don't know how to create a writer for a ", grid.GetClassName())
 
 
       

@@ -3,6 +3,8 @@
 #include <chrono>
 #include <thread>
 #include <vector>
+#include <chrono>
+#include <thread>
 
 
 #ifdef INSITU_ON
@@ -153,6 +155,8 @@ int main(int argc, char *argv[])
 
 		if (myRank == 0)
 			std::cout << myRank << " ~ ts: " << t << std::endl;
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 

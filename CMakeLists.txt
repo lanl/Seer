@@ -96,7 +96,7 @@ if (USE_PAPI)
 	set (PAPI_INCLUDE_PATH ${PAPI_INCLUDE_PATH} CACHE PATH "Papi include directory")
   	set (PAPI_LIBRARY ${PAPI_LIBRARY} CACHE PATH "Papi library")
   	include_directories(${PAPI_INCLUDE_PATH})
-
+    message(${PAPI_INCLUDE_PATH})
   	add_definitions(-DPAPI_ENABLED)
 endif()
 

@@ -15,7 +15,7 @@ class InWrapMochi:
 
 		# init the engine
 		self.client = SDSKVClient(engine)
-		self.addr = self.engine.lookup(server_addr)
+		self.addr = engine.lookup(server_addr)
 		provider_handle = self.client.create_provider_handle(self.addr, provider_id)
 		self.db = provider_handle.open(db_name)
 
@@ -31,11 +31,17 @@ class InWrapMochi:
 
 
 	def del_key(self, key):
-		self.db.erase(key)
+		if (self.db.exists(key)):
+			self.db.erase(key)
+		else:
+			return "key does not exist"
 
 
 	def get_val(self, key):
-		return self.db.get(key)
+		if (self.db.exists(key)):
+			return self.db.get(key)
+		else:
+			return "key does not exist"
 
 
 	def exists(self, key):
@@ -94,4 +100,10 @@ import sys
 sys.path.insert(1, '/home/pascal/projects/InWrap/python-utils')
 import InWrapMochi
 conn = InWrapMochi.InWrapMochi("na+sm","na+sm://2584/0",1,"foo")
+
+Darwin:
+import sys
+sys.path.insert(1,'/projects/insituperf/InWrap/InWrap/python-utils')
+import InWrapMochi
+conn = InWrapMochi.InWrapMochi("ofi+tcp","ofi+tcp://192.168.101.184:1234",1,"struc1")
 """
