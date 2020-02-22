@@ -15,4 +15,4 @@ inline bool fileExisits(std::string filename)
     return ifs.good();
 }
 
-}
+} // InWrap

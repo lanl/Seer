@@ -2,16 +2,18 @@
     "mochi": true,
     "mochi-database": 
     {
-        "address": "na+sm://5383/0",
+        "address" : "na+sm://33254/0",
         "port": "",
         "conn-type": "na+sm",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo"
+        "name": "foo",
+        "polling-rate" : 1
     },
 
 
     "mpi-profiling": true,
+    "log_prefix" : "struc_test",
 
     "papi": true,
     "papi_counters": 

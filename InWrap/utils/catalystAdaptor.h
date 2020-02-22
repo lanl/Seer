@@ -30,7 +30,7 @@ namespace InWrap
 {
 
 
-bool isPythonFile(std::string filename)
+inline bool isPythonFile(std::string filename)
 {
 	// Skip if file that does not end in .py
 	if ( !( filename.substr( filename.size()-3,3 ) == ".py" ) )
@@ -45,7 +45,7 @@ bool isPythonFile(std::string filename)
 }
 
 
-std::vector <std::string> catalystScriptChecker(int numArgs, char *argv[])
+inline std::vector <std::string> catalystScriptChecker(int numArgs, char *argv[])
 {
 	std::vector <std::string> catalystScripts;
 
@@ -104,7 +104,6 @@ class CatalystAdaptor
 	void coProcess(vtkRectilinearGrid  *grid, double time, unsigned int timeStep, bool lastTimeStep);
 
 	
-
 	std::string getLog(){ return log.str(); }
 };
 
@@ -118,7 +117,8 @@ inline CatalystAdaptor::CatalystAdaptor()
 
 inline CatalystAdaptor::CatalystAdaptor(int numScripts, char* scripts[])
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("constructor");
 
 	std::vector <std::string> scriptsArray;
 	for (int i=0; i<numScripts; i++)
@@ -128,81 +128,72 @@ inline CatalystAdaptor::CatalystAdaptor(int numScripts, char* scripts[])
 	init();
 	addPipelines(numScripts, scriptsArray);
 
-	log << "CatalystAdaptor Constructor took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("constructor");
+	log << "CatalystAdaptor Constructor took: " << clock.getDuration("constructor") << " s" << std::endl;
 }
 
 
 inline CatalystAdaptor::CatalystAdaptor(int numScripts, std::vector<std::string> scripts)
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("constructor");
 
 	Processor = NULL;
 	init();
 	addPipelines(numScripts, scripts);
 
-	log << "CatalystAdaptor Constructor took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("constructor");
+	log << "CatalystAdaptor Constructor took: " << clock.getDuration("constructor") << " s" << std::endl;
 }
 
 
 inline void CatalystAdaptor::init(int numScripts, std::vector<std::string> scripts)
 {
-	Timer clock(1);
-
-	//Processor = NULL;
-
-	std::cout << "CatalystAdaptor::init(...)" << std::endl;
+	Timer clock;
+	clock.start("init");
 
 	init();
-
-	std::cout << "CatalystAdaptor::1111 " << numScripts << std::endl;
 	for (int i=0; i<numScripts; i++)
 	{
 		std::cout << scripts[i] << std::endl;
 	}
 	addPipelines(numScripts, scripts);
 
-	std::cout << "CatalystAdaptor::222" << std::endl;
-
-	log << "CatalystAdaptor Constructor took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("init");
+	log << "CatalystAdaptor Constructor took: " << clock.getDuration("init") << " s" << std::endl;
 }
 
 
 inline void CatalystAdaptor::init()
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("init");
 
-	std::cout << "CatalystAdaptor::init()" << std::endl;
 
 	if (Processor == NULL)
 	{
-		std::cout << "CatalystAdaptor::init()   Processor == NULL" << std::endl;
 		Processor = vtkSmartPointer<vtkCPProcessor>::New();
-
-		std::cout << "CatalystAdaptor::init()   vtkSmartPointer<vtkCPProcessor>::New()" << std::endl;
-
 		Processor->Initialize();
-
-		std::cout << "CatalystAdaptor::init()   vtkSmartPointer<vtkCPProcessor>::Initialize()" << std::endl;
 	}
 	else
 	{
-		std::cout << "CatalystAdaptor::init() - RemoveAllPipelines()" << std::endl;
 		Processor->RemoveAllPipelines();
 	}
 
-	log << "CatalystAdaptor init took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("init");
+	log << "CatalystAdaptor init took: " << clock.getDuration("init") << " s" << std::endl;
 }
 
 
 inline int CatalystAdaptor::addPipelines(int numScripts, std::vector<std::string> scripts)
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("addPipelines");
 
 	int numValidScripts = 0;
 	int success = 1;
 	for (int i=0; i<numScripts; i++)
 	{
-		std::cout << "i:" << i << std::endl;
 		// Skipping files that do not end in .py
 		if ( !( scripts[i].substr( scripts[i].size()-3,3 ) == ".py" ) )
 		{
@@ -223,20 +214,19 @@ inline int CatalystAdaptor::addPipelines(int numScripts, std::vector<std::string
 		vtkNew<vtkCPPythonScriptPipeline> pipeline;
 		if (pipeline->Initialize(scripts[i].c_str()) )
 		{
-			std::cout << "before add pipeline" << scripts[i] <<std::endl;
 			Processor->AddPipeline(pipeline.GetPointer());
 			numValidScripts++;
 			std::cout << "scripts[i]" << scripts[i] << "added to pipeline" <<std::endl;
 		}
 		else
 		{
-			std::cout << "scripts[i]" << scripts[i] << "could not be added to pipeline" <<std::endl;
+			log << "scripts[i]" << scripts[i] << "could not be added to pipeline" <<std::endl;
 		}
 	}
 
-	std::cout << "CatalystAdaptor addPipelines took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("addPipelines");
+	log << "CatalystAdaptor Adding pipelines took: " << clock.getDuration("addPipelines") << " s" << std::endl;
 
-	//std::cout << "numValidScripts: " << numValidScripts << std::endl;
 	return numValidScripts++;
 }
 
@@ -251,21 +241,18 @@ inline void CatalystAdaptor::setWholeExtents(int minX, int maxX, int minY, int m
 
 inline void CatalystAdaptor::finalize()
 {
-	Timer clock(1);
-
 	Processor->RemoveAllPipelines();
 
 	Processor->Finalize();
 	if (Processor)
 		Processor = NULL;
-
-	log << "CatalystAdaptor finalize took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 inline void CatalystAdaptor::coProcess(vtkDataObject *grid, double time, unsigned int timeStep, bool lastTimeStep)
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("coProcess");
 
 	vtkNew<vtkCPDataDescription> dataDescription;
 	dataDescription->AddInput("input");
@@ -283,13 +270,15 @@ inline void CatalystAdaptor::coProcess(vtkDataObject *grid, double time, unsigne
 		Processor->CoProcess(dataDescription.GetPointer());
 	}
 
-	log << "CatalystAdaptor finalize took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("coProcess");
+	log << "CatalystAdaptor coProcess: " << clock.getDuration("coProcess") << " s" << std::endl;
 }
 
 
 inline void CatalystAdaptor::coProcess(vtkUnstructuredGrid  *uGrid, double time, unsigned int timeStep, bool lastTimeStep)
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("coProcess");
 
 	vtkNew<vtkCPDataDescription> dataDescription;
 	dataDescription->AddInput("input");
@@ -304,19 +293,19 @@ inline void CatalystAdaptor::coProcess(vtkUnstructuredGrid  *uGrid, double time,
 
 	if (Processor->RequestDataDescription(dataDescription.GetPointer()) != 0)
 	{
-		//std::cout << "CatalystAdaptor::coProcess "  << std::endl;
-
 		dataDescription->GetInputDescriptionByName("input")->SetGrid(uGrid);
 		Processor->CoProcess(dataDescription.GetPointer());
 	}
 
-	log << "CatalystAdaptor coProcess vtkUnstructuredGrid took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("coProcess");
+	log << "CatalystAdaptor coProcess: " << clock.getDuration("coProcess") << " s" << std::endl;
 }
 
 
 inline void CatalystAdaptor::coProcess(vtkStructuredGrid  *grid, double time, unsigned int timeStep, bool lastTimeStep)
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("coProcess");
 
 	vtkNew<vtkCPDataDescription> dataDescription;
 
@@ -337,13 +326,15 @@ inline void CatalystAdaptor::coProcess(vtkStructuredGrid  *grid, double time, un
 		Processor->CoProcess(dataDescription.GetPointer());
 	}
 
-	log << "CatalystAdaptor coProcess vtkStructuredGrid took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("coProcess");
+	log << "CatalystAdaptor coProcess: " << clock.getDuration("coProcess") << " s" << std::endl;
 }
 
 
 inline void CatalystAdaptor::coProcess(vtkRectilinearGrid  *recGrid, double time, unsigned int timeStep, bool lastTimeStep)
 {
-	Timer clock(1);
+	Timer clock;
+	clock.start("coProcess");
 
 	vtkNew<vtkCPDataDescription> dataDescription;
 	dataDescription->AddInput("input");
@@ -359,7 +350,8 @@ inline void CatalystAdaptor::coProcess(vtkRectilinearGrid  *recGrid, double time
 		Processor->CoProcess(dataDescription.GetPointer());
 	}
 
-	log << "CatalystAdaptor coProcess vtkRectilinearGrid took: " << clock.stop(1) << " s" << std::endl;
+	clock.stop("coProcess");
+	log << "CatalystAdaptor coProcess: " << clock.getDuration("coProcess") << " s" << std::endl;
 }
 
 } // inwrap

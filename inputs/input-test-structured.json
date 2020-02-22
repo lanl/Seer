@@ -1,14 +1,18 @@
 {
     "mochi": true,
     "mochi-database": {
-        "address": "ofi+tcp://192.168.101.184",
+        "address": "ofi+tcp://192.168.101.186",
         "port": ":1234",
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "struc4"
+        "name": "foo_test3",
+        "polling-rate" : 1
     },
+
+    "log_prefix" : "struc_test",
     "mpi-profiling": true,
+
     "papi": true,
     "papi_counters": [
         "PAPI_BR_UCN",

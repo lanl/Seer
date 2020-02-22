@@ -18,6 +18,7 @@
 #include "utils/log.hpp"
 #include "utils/utils.hpp"
 #include "utils/timer.hpp"
+#include "utils/strConvert.hpp"
 
 
 #ifdef INSITU_ON
@@ -49,7 +50,6 @@ namespace InWrap
 class InsituWrap
 {
 	bool insitu_on;
-	std::stringstream log;		// logging
 	nlohmann::json jsonInput;	// json
 
 	int numRanks;
@@ -58,12 +58,18 @@ class InsituWrap
 
 	int currentTimestep;
 
+	std::stringstream log;		// logging
+	std::string logName;
+
 
 	// Mochi
 	bool mochi_on;		
 	std::string mochi_database;
 	std::string	mochi_address;
 	int mochi_multiplex;
+
+	int currentPollingCount;
+	int pollIteration;
   #ifdef MOCHI_ENABLED
 	MochiInterface mochi;
   #endif
@@ -139,10 +145,14 @@ inline InsituWrap::InsituWrap()
 	catalyst_on = false;
 	veloc_on = false;
 
+	logName = "logs/";
+
 	mochi_on = false;
 	mochi_database = "";
 	mochi_address = "";
 	mochi_multiplex = 0;
+	currentPollingCount = 0;
+	pollIteration = 1; // poll mochi server at every timestep 
 
 	myRank = 0;
 	numRanks = 0;
@@ -193,6 +203,11 @@ inline void InsituWrap::print()
 
 inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 {
+	Timer clock;
+	clock.start("init");
+
+	clock.start("initialization");
+
 	//
 	// initialize insitu
 	myRank = _myRank;
@@ -268,6 +283,31 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 
 
 	//
+	// Find log
+	if ( jsonInput.find("log_prefix") != jsonInput.end() )
+	{
+		std::string log_prefix = jsonInput["log_prefix"];
+		logName = logName + log_prefix + "_" + std::to_string(myRank);
+	}
+	else
+		logName = logName + "_" + std::to_string(myRank);
+
+
+	if ( jsonInput.find("polling-rate") != jsonInput.end() )
+	{
+		std::string poll_iteration = jsonInput["polling-rate"];
+		pollIteration = InWrap::to_int(poll_iteration);
+		
+	}
+	else
+		pollIteration = 1;
+
+
+	
+
+
+
+	//
 	// Process JSON input file
 	if ( jsonInput.find("sensei") != jsonInput.end() )
 	{
@@ -283,9 +323,11 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 			log << "event: " << jsonInput["events-to-record"][i] << std::endl;
 		}
 
+	clock.stop("initialization");
 
 
 	// Papi
+	clock.start("papi");
   #ifdef PAPI_ENABLED
 	if ( jsonInput.find("papi") != jsonInput.end() )
 	{
@@ -305,9 +347,11 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		}
 	} 
   #endif  
+	clock.stop("papi");
 
 
 	// Mochi
+	clock.start("mochi");
   #if MOCHI_ENABLED
 	if ( jsonInput.find("mochi") != jsonInput.end() )
 	{
@@ -371,9 +415,11 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		}
 	}
   #endif
+	clock.stop("mochi");
 
 
 	// Catalyst
+	clock.start("catalyst");
   #ifdef CATALYST_ENABLED
 	if ( jsonInput.find("catalyst") != jsonInput.end() )
 	{
@@ -398,8 +444,8 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 			std::cout << "catalyst NOT ON!!!" << std::endl;
 		}
 	}
-
   #endif
+	clock.stop("catalyst");
 
 
 	// MPI
@@ -413,6 +459,15 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		}
 	}
 
+	clock.stop("init");
+	log << "InsituWrap init initialization took : " << clock.getDuration("initialization") << " s" << std::endl;
+	log << "InsituWrap init papi took : " << clock.getDuration("papi") << " s" << std::endl;
+	log << "InsituWrap init mochi took : " << clock.getDuration("mochi") << " s" << std::endl;
+	log << "InsituWrap init catalyst took : " << clock.getDuration("catalyst") << " s" << std::endl;
+	log << "InsituWrap init took: " << clock.getDuration("init") << " s" << std::endl;
+
+	InWrap::writeLog(logName, log.str());
+
 	return 1;
 }
 
@@ -421,10 +476,14 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 
 inline int InsituWrap::timestepInit()
 {
+	Timer clock;
+	clock.start("timestepInit");
+
 	if (!insitu_on)
 		return 0;
 
 
+	clock.start("papi");
   #ifdef PAPI_ENABLED
 	if (papi_on)
 	{
@@ -432,9 +491,14 @@ inline int InsituWrap::timestepInit()
 		papiEvent.startPapi();
 	}
   #endif
+	clock.stop("papi");
 
 	if (mpi_profiling_on)
 		MPI_Pcontrol(2);
+
+	clock.stop("init");
+	log << "InsituWrap timestepInit papi took: " << clock.getDuration("papi") << " s" << std::endl;
+	log << "InsituWrap timestepInit took: " << clock.getDuration("timestepInit") << " s" << std::endl;
 
 	return 1;
 }
@@ -443,9 +507,13 @@ inline int InsituWrap::timestepInit()
 
 inline int InsituWrap::timestepExecute(int ts)
 {
+	Timer clock;
+	clock.start("timestepExecute");
+
 	if (!insitu_on)
 		return 0;
 
+	clock.start("papi");
   #ifdef PAPI_ENABLED
 	if (papi_on)
 	{
@@ -472,8 +540,10 @@ inline int InsituWrap::timestepExecute(int ts)
 		papiEvent.stopReading();
 	}
   #endif
+	clock.stop("papi");
 
 
+	clock.start("mochi");
   #ifdef MOCHI_ENABLED
 	if (mochi_on && myRank == 0)
 	{
@@ -484,16 +554,7 @@ inline int InsituWrap::timestepExecute(int ts)
 		std::cout << myRank << " ~ " << ts << " output current ts " << std::endl;
 	}
   #endif
-
-
- //  #ifdef CATALYST_ENABLED
-	// if (catalyst_on)
-	// {
-	// 	std::cout << myRank << " ~ " << ts << " copreocessing catalyst.... " << std::endl;
-	// 	cat.coProcess(genericVTK->getGrid(), ts / 1.0, ts, ts == (numTimesteps - 1));
-	// 	std::cout << myRank << " ~ " << ts << " ... copreocessing catalyst!" << std::endl;
-	// }
- //  #endif
+	clock.stop("mochi");
 
 	if (mpi_profiling_on)
 		MPI_Pcontrol(3);
@@ -501,186 +562,207 @@ inline int InsituWrap::timestepExecute(int ts)
 	
 
 	// Read in new values
+	clock.start("mochi_polling");
   #ifdef MOCHI_ENABLED
-
-	if ( mochi.existsKey("NEW_KEY") )
+	if (mochi_on)
 	{
-		std::cout << myRank << " ~ " << ts << " NEW_KEY  detected " << std::endl;
-		std::vector<std::string> keysInDB;
-  	  #ifdef PAPI_ENABLED
-
-		// Add Papi counters
+		// only poll at corrent interval
+		if (currentPollingCount == pollIteration-1)
 		{
-			std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("ADD_PAPI");
+			currentPollingCount = 0; // poll mochi server at every timestep 
 
-			if (foundKeys.size() > 0)
+			std::vector<std::string> new_keys_list = mochi.listKeysWithPrefix("NEW_KEY");
+
+			//if ( mochi.existsKey("NEW_KEY") )
+			for (int k=0; k<new_keys_list.size(); k++)
 			{
-				std::cout << myRank << " ~ " << ts << "ADD_PAPI  found " << foundKeys.size() << std::endl;
+				// // Loop until we are ready
+				// std::string key_val = mochi.getValue("NEW_KEY");
+				// while (key_val == "0")
+				// {
+				// 	key_val = mochi.getValue("NEW_KEY");
+				// 	std::cout << "key_val: " << key_val << std::endl;
+				// }
 
-				std::vector<std::string> foundVals;
-				for (int i=0; i<foundKeys.size(); i++)
+
+				std::string key_val = mochi.getValue(new_keys_list[k]);
+				log << "key: " << new_keys_list[k] << ", value: " << key_val << std::endl;
+
+				std::vector<std::string> keysInDB;
+		  	  #ifdef PAPI_ENABLED
+
+				// Add Papi counters
 				{
-					std::cout << myRank << " ~ " << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
-					foundVals.push_back( mochi.getValue(foundKeys[i]) );
-					keysInDB.push_back(foundKeys[i]);
-				}
+					std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_PAPI");
 
-
-				for (int i=0; i<foundVals.size(); i++)
-				{
-					if ( !papiEvent.addPapiEvent(foundVals[i]) )
+					if (foundKeys.size() > 0)
 					{
-	 					std::cout << "Adding event " << foundVals[i] << " failed!" << std::endl;
-					}
-					else
-					{
-						std::cout << myRank << " ~ " << ts << " ADDed" << foundVals[i] << std::endl;
-						mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
-					}
+						log << ts << " ADD_PAPI  found " << foundKeys.size() << std::endl;
 
-					// Remove that key
-					//mochi.eraseKey( foundKeys[i] );
-				}
-			}
-
-			std::cout << myRank << " ~ " << ts << " done adding new papi keys " << std::endl;
-		}
+						std::vector<std::string> foundVals;
+						for (int i=0; i<foundKeys.size(); i++)
+						{
+							log << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
+							foundVals.push_back( mochi.getValue(foundKeys[i]) );
+							keysInDB.push_back(foundKeys[i]);
+						}
 
 
-		// Remove Papi counters
-		{
-			std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("REMOVE_PAPI");
-
-			if (foundKeys.size() > 0)
-			{
-				std::cout << myRank << " ~ " << ts << " REMOVE_PAPI  found " << std::endl;
-
-				std::vector<std::string> foundVals;
-				for (int i=0; i<foundKeys.size(); i++)
-				{
-					std::cout << myRank << " ~ " << ts << " REMOVE foundKeys[i]" << foundKeys[i] << std::endl;
-					foundVals.push_back( mochi.getValue(foundKeys[i]) );
-					keysInDB.push_back(foundKeys[i]);
-				}
-
-
-				for (int i=0; i<foundVals.size(); i++)
-				{
-					if ( !papiEvent.removePapiEvent(foundVals[i]) )
-					{
-	 					std::cout << "Remove event " << foundVals[i] << " failed!" << std::endl;
-					}
-					else
-					{
-						std::cout << myRank << " ~ " << ts << " Removed" << foundVals[i] << std::endl;
-						mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
-					}
-
-					// Remove that key
-					//mochi.eraseKey( foundKeys[i] );
-				}
-			}
-
-			std::cout << myRank << " ~ " << ts << " done removing papi keys " << std::endl;
-		}
-
-		// 
-		for (int e=0; e<papiEvent.getNumEvents(); e++)
-		{ 
-			std::string key   = "papi_counter_" + std::to_string( e );
-			std::string value = papiEvent.getPapiEventName(e);
-			mochi.putKeyValue(key, value);
-		}
-  	  #endif //PAPI_ENABLED
-
-
-	  #ifdef CATALYST_ENABLED
-		//catalyst_scripts
-		if (catalyst_on)
-		{
-			// Add Catalyst script
-			{
-				std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("ADD_CATALYST_SCRIPT");
-
-				if (foundKeys.size() > 0)
-				{
-					std::cout << myRank << " ~ " << ts << "ADD_CATALYST_SCRIPT  found " << foundKeys.size() << std::endl;
-
-					std::vector<std::string> foundVals;
-					for (int i=0; i<foundKeys.size(); i++)
-					{
-						std::cout << myRank << " ~ " << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
-						foundVals.push_back( mochi.getValue(foundKeys[i]) );
-						keysInDB.push_back(foundKeys[i]);
-					}
-
-
-					for (int i=0; i<foundVals.size(); i++)
-					{
-						std::cout << myRank << " ~ " << ts << " ADDed foundVals[i]" << foundVals[i] << std::endl;
-						catalyst_scripts.push_back(foundVals[i]);	// Add script
-						//mochi.eraseKey( foundKeys[i] );				// Remove that key
-					}
-				}
-
-				std::cout << myRank << " ~ " << ts << " done adding new catalyst " << std::endl;
-			}
-
-
-			// Remove Catalyst script
-			{
-				std::vector<std::string> foundKeys = mochi.listKeysWithPrefix("REMOVE_CATALYST_SCRIPT");
-
-				if (foundKeys.size() > 0)
-				{
-					std::vector<std::string> foundVals;
-					for (int i=0; i<foundKeys.size(); i++)
-					{
-						foundVals.push_back( mochi.getValue(foundKeys[i]) );
-						keysInDB.push_back(foundKeys[i]);
-					}
-
-
-
-
-					for (int i=0; i<foundVals.size(); i++)
-					{
-						// Remove script
-						for (int j=0; j<catalyst_scripts.size(); j++)
-							if (catalyst_scripts[j] == std::string(foundVals[i]))
+						for (int i=0; i<foundVals.size(); i++)
+						{
+							if ( !papiEvent.addPapiEvent(foundVals[i]) )
 							{
-								 catalyst_scripts.erase(catalyst_scripts.begin()+j);
-								 break;
+			 					std::cout << "Adding event " << foundVals[i] << " failed!" << std::endl;
+							}
+							else
+							{
+								log << ts << " ADDed" << foundVals[i] << std::endl;
+								mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
+							}
+						}
+					}
+
+					log << ts << " done adding new papi keys " << std::endl;
+				}
+
+
+				// Remove Papi counters
+				{
+					std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":REMOVE_PAPI");
+
+					if (foundKeys.size() > 0)
+					{
+						log << ts << " REMOVE_PAPI  found " << foundKeys.size() << std::endl;
+
+						std::vector<std::string> foundVals;
+						for (int i=0; i<foundKeys.size(); i++)
+						{
+							log << ts << " REMOVE foundKeys[i]" << foundKeys[i] << std::endl;
+							foundVals.push_back( mochi.getValue(foundKeys[i]) );
+							keysInDB.push_back(foundKeys[i]);
+						}
+
+
+						for (int i=0; i<foundVals.size(); i++)
+						{
+							if ( !papiEvent.removePapiEvent(foundVals[i]) )
+							{
+			 					std::cout << "Remove event: " << foundVals[i] << " failed!" << std::endl;
+							}
+							else
+							{
+								log << ts << " Removed" << foundVals[i] << std::endl;
+								mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
+							}
+						}
+					}
+
+					log << " done removing papi keys " << std::endl;
+				}
+
+				// Put new key in mochi database
+				for (int e=0; e<papiEvent.getNumEvents(); e++)
+				{ 
+					std::string key   = "papi_counter_" + std::to_string( e );
+					std::string value = papiEvent.getPapiEventName(e);
+					mochi.putKeyValue(key, value);
+				}
+		  	  #endif //PAPI_ENABLED
+
+
+			  #ifdef CATALYST_ENABLED
+				//catalyst_scripts
+				if (catalyst_on)
+				{
+					// Add Catalyst script
+					{
+						std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_CATALYST_SCRIPT");
+
+						if (foundKeys.size() > 0)
+						{
+							log << ts << "ADD_CATALYST_SCRIPT  found " << foundKeys.size() << std::endl;
+
+							std::vector<std::string> foundVals;
+							for (int i=0; i<foundKeys.size(); i++)
+							{
+								log << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
+								foundVals.push_back( mochi.getValue(foundKeys[i]) );
+								keysInDB.push_back(foundKeys[i]);
 							}
 
-						//mochi.eraseKey( foundKeys[i] );				// Remove that key
+
+							for (int i=0; i<foundVals.size(); i++)
+							{
+								log << ts << " ADDed foundVals[i]" << foundVals[i] << std::endl;
+								catalyst_scripts.push_back(foundVals[i]);	// Add script
+							}
+						}
+
+						log << ts << " done adding new catalyst " << std::endl;
 					}
+
+
+					// Remove Catalyst script
+					{
+						std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":REMOVE_CATALYST_SCRIPT");
+
+						if (foundKeys.size() > 0)
+						{
+							log << ts << "REMOVE_CATALYST_SCRIPT  found " << foundKeys.size() << std::endl;
+
+							std::vector<std::string> foundVals;
+							for (int i=0; i<foundKeys.size(); i++)
+							{
+								log << ts << " REMOVE foundKeys[i]" << foundKeys[i] << std::endl;
+								foundVals.push_back( mochi.getValue(foundKeys[i]) );
+								keysInDB.push_back(foundKeys[i]);
+							}
+
+
+							for (int i=0; i<foundVals.size(); i++)
+							{
+								// Remove script
+								for (int j=0; j<catalyst_scripts.size(); j++)
+									if (catalyst_scripts[j] == std::string(foundVals[i]))
+									{
+										 catalyst_scripts.erase(catalyst_scripts.begin()+j);
+										 break;
+									}
+							}
+						}
+					}
+
+					// Reinitialize catalyst
+					cat.init(catalyst_scripts.size(), catalyst_scripts);
+				}
+		      #endif //CATALYST_ENABLED
+
+				MPI_Barrier(MPI_COMM_WORLD);
+				if (myRank == 0)
+				{
+					for (int i=0; i<keysInDB.size(); i++)
+						mochi.eraseKey( keysInDB[i] );
+
+					mochi.eraseKey(new_keys_list[k]);
 				}
 			}
-
-			// Reinitialize catalyst
-			//std::cout << "cat.finalize()" << std::endl;
-			//cat.finalize();
-			std::cout << "cat.init()" << std::endl;
-			cat.init(catalyst_scripts.size(), catalyst_scripts);
-			std::cout << "cat.init() done!!!" << std::endl;
 		}
-      #endif //CATALYST_ENABLED
-
-		MPI_Barrier(MPI_COMM_WORLD);
-		if (myRank == 0)
-		{
-			for (int i=0; i<keysInDB.size(); i++)
-				mochi.eraseKey( keysInDB[i] );
-
-			mochi.eraseKey("NEW_KEY");
-		}
+		else
+			currentPollingCount++;
 	}
-
   #endif //MOCHI_ENABLED
+	clock.stop("mochi_polling");
   
 
 	currentTimestep++;
+
+	clock.stop("timestepExecute");
+	log << "InsituWrap timestepExecute papi took: " << clock.getDuration("papi") << " s" << std::endl;
+	log << "InsituWrap timestepExecute mochi took: " << clock.getDuration("mochi") << " s" << std::endl;
+	log << "InsituWrap timestepExecute polling took: " << clock.getDuration("mochi_polling") << " s" << std::endl;
+	log << "InsituWrap timestepExecute took: " << clock.getDuration("timestepExecute") << " s" << std::endl;
+
+	InWrap::writeLog(logName, log.str());
   
 	return 1;
 }

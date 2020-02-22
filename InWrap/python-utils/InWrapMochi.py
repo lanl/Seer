@@ -1,4 +1,6 @@
 import sys
+import socket
+import hashlib
 from pymargo.core import Engine
 from pysdskv.client import *
 import matplotlib.pyplot as plt
@@ -24,10 +26,12 @@ class InWrapMochi:
 		self.used_unique_ids = []
 		self.count = 0
 
+		self.addingKeys = False
 
-	def add_keyVal(self, key, value):
-		self.command_dic[key + "-" + str(self.count)] = value
-		self.count = self.count + 1
+
+
+	def put_keyval(self, key, val):
+		self.db.put(key, val)
 
 
 	def del_key(self, key):
@@ -57,26 +61,53 @@ class InWrapMochi:
 		self.client.shutdown_service(self.addr)
 
 
-	def send(self):
+
+	def getIP(self):
+		hostname = socket.gethostname()    
+		IPAddr = socket.gethostbyname(hostname)  
+		return str(IPAddr)
+
+
+	def generateHash(self, value):
+		hash_object = hashlib.md5(value.encode())
+		temp_str = str(hash_object.hexdigest())
+		return ( temp_str[0:8] )
+
+
+	# Transaction operations: Set and commit
+	def set(self, key, value):
+		self.command_dic[key + "-" + str(self.count)] = value
+		self.count = self.count + 1
+
+
+	def commit(self):
+
+		ip_addr = self.getIP()
+		hash_val = self.generateHash(ip_addr)
+		new_key = "NEW_KEY_" + hash_val
 
 		# Loop until you can add a new key
-		while ( self.db.exists("NEW_KEY") ): 
+		while ( self.db.exists(new_key) ): 
 			continue
 
 
 		# Generate a random number to pad keys with
-		rand_num = random.randint(99999,1000000)
-		while rand_num in self.used_unique_ids:
-			rand_num = random.randint(99999,1000000)
+		#rand_num = random.randint(99999,1000000)
+		#while rand_num in self.used_unique_ids:
+		#	rand_num = random.randint(99999,1000000)
 
-		self.used_unique_ids.append(rand_num)
+		#self.used_unique_ids.append(rand_num)
 
+		# Format of keys:
+		# XXXXXX:Key-YYY
 
 		# Add keys to mochi DB
 		key_list = []
-		self.db.put("NEW_KEY", "0")	# adding keys
+		self.addingKeys = True
+		#self.db.put("NEW_KEY", "0")	# adding keys
 		for key,val in self.command_dic.items():
-			key_padded = key + ":" + str(rand_num);	# add unique tag to each
+			key_padded = hash_val + ":" + key	# add unique tag to each
+			#key_padded = key + ":" + str(rand_num)	# add unique tag to each
 			self.db.put(key_padded, val)			# put key in mochi db
 
 			key_list.append(key)	# save the key for later deletion
@@ -84,8 +115,9 @@ class InWrapMochi:
 			print("key: ", key_padded)
 			print("val: ", val)
 
-		self.db.put("NEW_KEY", str(rand_num))	# adding keys done
-
+		#self.db.put("NEW_KEY", str(rand_num))	# adding keys done
+		self.db.put(new_key, hash_val)	# adding keys done
+		self.addingKeys = False
 
 		# Delete keys
 		for k in key_list:

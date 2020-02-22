@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
 	int numPoints = 100;
-	int numTimesteps = 100;
+	int numTimesteps = 300;
 
 	srand(time(NULL) + myRank);
 
@@ -52,8 +52,7 @@ int main(int argc, char *argv[])
 	int processor_name_len;
 	MPI_Get_processor_name(processor_name, &processor_name_len);
 
-
-	InWrap::Timer factComputationTimer, mainLoopTimer;
+	InWrap::Timer clock;
 
 	if (myRank == 0)
 		std::cout << numTimesteps << std::endl;
@@ -64,7 +63,7 @@ int main(int argc, char *argv[])
 	// Loop over timesteps
 	for (int t = 0; t < numTimesteps; t++)
 	{
-		mainLoopTimer.start();
+		clock.start("mainLoop");
 
 		if (myRank == 0)
 			std::cout  << "ts: " << t << std::endl;
@@ -115,7 +114,8 @@ int main(int argc, char *argv[])
 		double *cellDataFact = new double[numCells];
 		int *cellRankData = new int[numCells];
 
-		factComputationTimer.start();
+		clock.start("factComputation");
+
 		for (int i = 0; i < numCells ; i++)
 		{
 
@@ -129,13 +129,12 @@ int main(int argc, char *argv[])
 			cellRankData[i] = myRank;
 		}
 
-
-		factComputationTimer.stop();
+		clock.stop("factComputation");
 
 		msgLog << "\nnumPoints: " << numPoints << " point data: " << myRank + t * 0.01 << std::endl;
 		msgLog << "numCells: " << numCells << " cell data: " << myRank + t * 0.05 << std::endl;
 
-		mainLoopTimer.stop();
+		clock.stop("mainLoop");
 
 
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -179,8 +178,8 @@ int main(int argc, char *argv[])
 
 			insitu.timestepExecute(t);
 
-			//insitu.recordEvent( "comp-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( factComputationTimer.getDuration() ) );
-			//insitu.recordEvent( "loop-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( mainLoopTimer.getDuration() ) );
+			//insitu.recordEvent( "comp-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( clock.getDuration("factComputation") ) );
+			//insitu.recordEvent( "loop-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( clock.getDuration("mainLoop") ) );
 
 	
 			//temp.writeParts(numRanks, myRank, myRank, "testStructuredMPI_" + std::to_string(t));

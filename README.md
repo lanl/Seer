@@ -97,7 +97,8 @@ mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # di
 
 * Remote:
 ~~~bash
-jupyter password: password	                            # if needed
+module load anaconda/Anaconda3 
+jupyter-notebook password                  # only needed first time
 jupyter-notebook --no-browser --port=8891 --ip=0.0.0.0
 ~~~
 

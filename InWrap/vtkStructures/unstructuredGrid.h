@@ -4,7 +4,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "../utils/timer.hpp"
 #include "vtkDataStruct.h"
 
 #include <mpi.h>
@@ -35,8 +34,6 @@ class UnstructuredGrid: public VTKDataStruct
   	vtkSmartPointer<vtkCellArray> cells;
   	vtkIdType idx;
 
-	std::stringstream log;
-
 	int myRank, numRanks;
 
   public:
@@ -66,17 +63,12 @@ class UnstructuredGrid: public VTKDataStruct
 
 	// Cleanup
 	void reset();
-
-	// log
-	std::string getLog(){ return log.str(); }
 };
 
 
 
 inline UnstructuredGrid::UnstructuredGrid()
 {
-	Timer clock(1);
-
 	writer = vtkSmartPointer<vtkXMLPUnstructuredGridWriter>::New();
 	uGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
@@ -84,16 +76,12 @@ inline UnstructuredGrid::UnstructuredGrid()
   	cells = vtkSmartPointer<vtkCellArray>::New();
 
   	idx = 0;
-
-	log << "UnstructuredGrid UnstructuredGrid took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 
 inline UnstructuredGrid::UnstructuredGrid(int _myRank, int _numRanks)
 {
-	Timer clock(1);
-
 	writer = vtkSmartPointer<vtkXMLPUnstructuredGridWriter>::New();
 	uGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
@@ -104,8 +92,6 @@ inline UnstructuredGrid::UnstructuredGrid(int _myRank, int _numRanks)
 
   	myRank = _myRank;
   	numRanks = _numRanks;
-
-	log << "UnstructuredGrid UnstructuredGrid took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -115,21 +101,15 @@ inline UnstructuredGrid::UnstructuredGrid(int _myRank, int _numRanks)
 template <typename T> 
 inline void UnstructuredGrid::addPoint(T *pointData)
 {
-	Timer clock(1);
-
 	pnts->InsertPoint(idx, pointData);
     cells->InsertNextCell(1, &idx);
     idx++;
-
-	log << "UnstructuredGrid addPoint took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T> 
 inline void UnstructuredGrid::setPoints(T *pointData, int numPoints, int cellType)
 {
-	Timer clock(1);
-
 	pnts->SetNumberOfPoints(numPoints);
 
 	for (int i=0; i<numPoints ; ++i)
@@ -145,8 +125,6 @@ inline void UnstructuredGrid::setPoints(T *pointData, int numPoints, int cellTyp
 	}
 
 	pushPointsToGrid(cellType);
-
-	log << "UnstructuredGrid setPoints took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -177,8 +155,6 @@ inline void UnstructuredGrid::reset()
 template <typename T>
 inline void UnstructuredGrid::addFieldData(std::string fieldName, T *data)
 {
-	Timer clock(1);
-  
   	vtkSOADataArrayTemplate<T>* temp = vtkSOADataArrayTemplate<T>::New();
 
   	temp->SetNumberOfTuples(1);
@@ -188,8 +164,6 @@ inline void UnstructuredGrid::addFieldData(std::string fieldName, T *data)
   	uGrid->GetFieldData()->AddArray(temp);
 
   	temp->Delete();
-
-	log << "UnstructuredGrid addFieldData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -198,8 +172,6 @@ inline void UnstructuredGrid::addFieldData(std::string fieldName, T *data)
 template <typename T>
 inline void UnstructuredGrid::addScalarData(std::string varName, int numPoints, T *data)
 {
-	Timer clock(1);
-
 	vtkSOADataArrayTemplate<T>* temp = vtkSOADataArrayTemplate<T>::New();
 
   	temp->SetNumberOfTuples(numPoints);
@@ -209,16 +181,12 @@ inline void UnstructuredGrid::addScalarData(std::string varName, int numPoints, 
   	uGrid->GetPointData()->AddArray(temp);
 
   	temp->Delete();
-
-	log << "UnstructuredGrid addVectoraddScalarDataData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void UnstructuredGrid::addVectorData(std::string varName, int numPoints, int numComponents, T *data)
 {
-	Timer clock(1);
-
 	vtkAOSDataArrayTemplate<T>* temp = vtkAOSDataArrayTemplate<T>::New();
 
 	temp->SetNumberOfTuples(numPoints);
@@ -228,8 +196,6 @@ inline void UnstructuredGrid::addVectorData(std::string varName, int numPoints, 
   	uGrid->GetPointData()->AddArray(temp);
 
   	temp->Delete();
-
-	log << "UnstructuredGrid addVectorData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -238,22 +204,16 @@ inline void UnstructuredGrid::addVectorData(std::string varName, int numPoints, 
 // Writing
 inline void UnstructuredGrid::writeParts(int numPieces, int startPiece, int endPiece, std::string fileName)
 {
-	Timer clock(1);
-
 	writer->SetNumberOfPieces(numPieces);
 	writer->SetStartPiece(startPiece);
 	writer->SetEndPiece(endPiece);
 
 	write(fileName, 1);
-
-	log << "UnstructuredGrid write took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 inline void UnstructuredGrid::write(std::string fileName, int parallel)
 {
-	Timer clock(1);
-
 	std::string outputFilename;
 
 	writer->SetDataModeToBinary();
@@ -299,8 +259,6 @@ inline void UnstructuredGrid::write(std::string fileName, int parallel)
 		writer->Write();
 
 	}
-
-	log << "UnstructuredGrid write took: " << clock.stop(1) << " s" << std::endl;
 }
 
 } // inwrap

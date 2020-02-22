@@ -1,68 +1,109 @@
+/*================================================================================
+This software is open source software available under the BSD-3 license.
+Copyright (c) 2017, Los Alamos National Security, LLC.
+All rights reserved.
+Authors:
+ - Pascal Grosset
+================================================================================*/
 #pragma once
 
 #include <chrono>
 #include <string>
 #include <ctime>
-#include <unordered_map>
 #include <sstream>
+#include <map>
 
 namespace InWrap  
 { 
 
 class Timer
 {
-	std::chrono::time_point<std::chrono::system_clock> startTime, endTime;
-	std::chrono::duration<double> elapsed_seconds;
-	std::unordered_map< std::string, std::chrono::time_point<std::chrono::system_clock> > timingLog;
+	std::map<
+		std::string,
+		std::chrono::time_point<std::chrono::system_clock> 
+				> timers;
+				
+	std::map< 
+		std::string, 
+		std::chrono::duration<double> 
+				> timers_duration;
 
   public:
+	Timer();
+	~Timer();
 
-	Timer(){};
-	Timer(int x){ start(); };
-	~Timer(){};
+	int start(std::string timerName);
+	int stop(std::string timerName);
 
-	void start();
-	void stop();
-	double stop(int x);
+	double getCurrentDuration(std::string timerName);	// time in seconds since timer started
+	double getDuration(std::string timerName);		    // time in seconds
 
-	double getCurrentDuration();			// time in seconds since timer started
-	double getDuration();					// time in seconds
-	
 	static std::string getCurrentTime();	// get the current time
 };
 
+inline Timer::Timer() {}
+inline Timer::~Timer() {}
 
-inline void Timer::start()
+
+inline int Timer::start(std::string timerName) 
 { 
-	startTime = std::chrono::system_clock::now();
-}
+	auto startTime = std::chrono::system_clock::now();
+	if (timers.find(timerName) == timers.end())
+		timers.insert( std::pair<std::string,std::chrono::time_point<std::chrono::system_clock>>(timerName,startTime) );	
+	else
+		timers[timerName] = startTime;
 
-inline void Timer::stop()
-{ 
-	endTime = std::chrono::system_clock::now();
-	elapsed_seconds = endTime - startTime; 
-}
-
-inline double Timer::stop(int x)
-{ 
-	endTime = std::chrono::system_clock::now();
-	elapsed_seconds = endTime - startTime; 
-
-	return elapsed_seconds.count();
+	return 1;
 }
 
 
-inline double Timer::getDuration()
+inline int Timer::stop(std::string timerName) 
 { 
-	return elapsed_seconds.count(); 
+	if (timers.find(timerName) != timers.end())
+	{
+		auto endTime = std::chrono::system_clock::now(); 
+		auto elapsed_time = endTime - timers[timerName];
+		auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed_time).count();
+		timers_duration.insert( std::pair<std::string,std::chrono::duration<double>>(timerName, elapsed_seconds) );
+		   return 1;
+	}
+	else
+	{
+		std::cout << "Timer " << timerName << " does NOT exist!!!" << std::endl;
+		return -1;
+	}
 }
 
-inline double Timer::getCurrentDuration()
+
+inline double Timer::getDuration(std::string timerName) 
 { 
-	std::chrono::time_point<std::chrono::system_clock> timeNow;
-	timeNow = std::chrono::system_clock::now();
-	
-	return (timeNow - startTime).count(); 
+	if (timers_duration.find(timerName) != timers_duration.end())
+	{
+
+		return (timers_duration[timerName]).count(); 
+	}
+	else
+	{
+		std::cout << "Timer " << timerName << " does NOT exist!!!" << std::endl;
+		return -1;
+	}
+}
+
+
+inline double Timer::getCurrentDuration(std::string timerName)
+{ 
+	if (timers.find(timerName) != timers.end())
+	{
+		auto timeNow = std::chrono::system_clock::now();
+		auto elapsed_time = timeNow - timers[timerName];
+		auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed_time).count();
+		return elapsed_seconds; 
+	}
+	else
+	{
+		std::cout << "Timer " << timerName << " does NOT exist!!!" << std::endl;
+		return -1;
+	}
 }
 
 
@@ -72,8 +113,8 @@ inline std::string Timer::getCurrentTime()
 	tm *ltm = localtime(&now);
 
 	std::stringstream ss;
-	ss << "_"<< 1 + ltm->tm_mon << "_" << ltm->tm_mday << "__" << ltm->tm_hour << "_" << ltm->tm_min << "_" << ltm->tm_sec << "_" << std::endl;
+	ss << "_" << 1 + ltm->tm_mon << "_" << ltm->tm_mday << "__" << ltm->tm_hour << "_" << ltm->tm_min << "_" << ltm->tm_sec << "_" << std::endl;
 	return ss.str();
 }
 
-}
+} //InWrap

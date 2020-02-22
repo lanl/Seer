@@ -3,7 +3,6 @@
 #include <string>
 #include <iostream>
 
-#include "../utils/timer.hpp"
 #include "vtkDataStruct.h"
 
 
@@ -39,9 +38,6 @@ class StructuredGrid: public VTKDataStruct
 	int dims[3];
 	int extents[6];
 	int wholeExtents[6];
-
-	std::stringstream log;
-
 
   public:
 	StructuredGrid();
@@ -89,10 +85,6 @@ class StructuredGrid: public VTKDataStruct
 	// Set n Get
 	int getNumVertices() { return strucGrid->GetNumberOfPoints(); }
 	int getNumCells() { return strucGrid->GetNumberOfCells(); }
-
-
-	// log
-	std::string getLog(){ return log.str(); }
 };
 
 
@@ -101,14 +93,10 @@ class StructuredGrid: public VTKDataStruct
 
 inline StructuredGrid::StructuredGrid()
 {
-	Timer clock(1);
-
 	writer = vtkSmartPointer<vtkXMLPStructuredGridWriter>::New();
 	strucGrid = vtkSmartPointer<vtkStructuredGrid>::New();
 
 	pnts = vtkSmartPointer<vtkPoints>::New();
-
-	log << "StructuredGrid addScalarPointData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -182,8 +170,6 @@ inline void StructuredGrid::addPoint(T *pointData, int _dims)
 template <typename T>
 inline void StructuredGrid::addFieldData(std::string fieldName, T *data, int numElements)
 {
-	Timer clock(1);
-
   	vtkSOADataArrayTemplate<T>* temp = vtkSOADataArrayTemplate<T>::New();
 
 	temp->SetNumberOfTuples(1);
@@ -193,8 +179,6 @@ inline void StructuredGrid::addFieldData(std::string fieldName, T *data, int num
 	strucGrid->GetFieldData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "StructuredGrid addFieldData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -203,8 +187,6 @@ inline void StructuredGrid::addFieldData(std::string fieldName, T *data, int num
 template <typename T> 
 inline void StructuredGrid::setPoints(T *pointData, int numPoints)
 {
-	Timer clock(1);
-
 	for (int i=0; i<numPoints ; i++)
 	{
 		T pnt[3];
@@ -215,8 +197,6 @@ inline void StructuredGrid::setPoints(T *pointData, int numPoints)
 	}
 
 	pushPointsToGrid();
-
-	log << "StructuredGrid setPoints took: " << clock.stop(1) << " s" << std::endl;
 }
 
 //
@@ -224,8 +204,6 @@ inline void StructuredGrid::setPoints(T *pointData, int numPoints)
 template <typename T>
 inline void StructuredGrid::addScalarPointData(std::string varName, int numPoints, T *data)
 {
-	Timer clock(1);
-
 	vtkSOADataArrayTemplate<T>* temp = vtkSOADataArrayTemplate<T>::New();
 	
 	temp->SetNumberOfTuples(numPoints);
@@ -235,16 +213,12 @@ inline void StructuredGrid::addScalarPointData(std::string varName, int numPoint
 	strucGrid->GetPointData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "StructuredGrid addScalarPointData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void StructuredGrid::addVectorPointData(std::string varName, int numPoints, int numComponents, T *data)
 {
-	Timer clock(1);
-
 	vtkAOSDataArrayTemplate<T>* temp = vtkAOSDataArrayTemplate<T>::New();
 
 	temp->SetNumberOfTuples(numPoints);
@@ -254,16 +228,12 @@ inline void StructuredGrid::addVectorPointData(std::string varName, int numPoint
 	strucGrid->GetPointData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "StructuredGrid addVectorPointData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void StructuredGrid::addScalarCellData(std::string varName, int numPoints, T *data)
 {
-	Timer clock(1);
-
 	vtkSOADataArrayTemplate<T>* temp = vtkSOADataArrayTemplate<T>::New();
 
 	temp->SetNumberOfComponents(1);
@@ -274,16 +244,12 @@ inline void StructuredGrid::addScalarCellData(std::string varName, int numPoints
 	strucGrid->GetCellData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "StructuredGrid addVectorCellData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void StructuredGrid::addVectorCellData(std::string varName, int numPoints, int numComponents, T *data)
 {
-	Timer clock(1);
-
 	vtkAOSDataArrayTemplate<T>* temp = vtkAOSDataArrayTemplate<T>::New();
 
 	temp->SetNumberOfComponents(numComponents);
@@ -293,8 +259,6 @@ inline void StructuredGrid::addVectorCellData(std::string varName, int numPoints
 	strucGrid->GetCellData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "StructuredGrid addVectorCellData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -303,22 +267,16 @@ inline void StructuredGrid::addVectorCellData(std::string varName, int numPoints
 // Writing
 inline void StructuredGrid::writeParts(int numPieces, int startPiece, int endPiece, std::string fileName)
 {
-	Timer clock(1);
-
 	writer->SetNumberOfPieces(numPieces);
 	writer->SetStartPiece(startPiece);
 	writer->SetEndPiece(endPiece);
 
 	write(fileName, 1);
-
-	log << "StructuredGrid writeParts took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 inline void StructuredGrid::write(std::string fileName, int parallel)
 {
-	Timer clock(1);
-
 	std::string outputFilename;
 
 	if (parallel == 1)
@@ -366,9 +324,6 @@ inline void StructuredGrid::write(std::string fileName, int parallel)
 
 		writer->Write();
 	}
-
-
-	log << "StructuredGrid write took: " << clock.stop(1) << " s" << std::endl;
 }
 
 } // inwrap

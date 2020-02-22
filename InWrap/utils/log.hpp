@@ -12,92 +12,34 @@ namespace InWrap
 class Log
 {
 	std::string outputFilename;
-	std::string logMsg;
 
   public:
-	Log();
-	Log(std::string _outputFilename): outputFilename(_outputFilename){ logMsg = ""; }
+	std::stringstream log;
+
+	Log(){ outputFilename = "untitled.log"; }
+	Log(std::string _outputFilename): outputFilename(_outputFilename){ }
 	~Log();
 
-	void setOutputFilename(std::string _outputFilename);
-	void clearLog();
-	void addLog(std::string _msg);
-	void addLog(std::stringstream & _msg);
-
-
-	std::string getLog();
-
-	void writeLogToDisk(std::stringstream & _msg);
-	void writeLogToDisk();
-	void appendLogToDisk();
+	void setOutputFilename(std::string _outputFilename){ outputFilename = _outputFilename; }
+	void clear(){ log.str(""); }
+	void writeToDisk();
 };
 
-
-
-inline Log::Log()
-{
-	outputFilename = "untitled.log";
-	logMsg = "";
-}
 
 inline Log::~Log()
 {
 	outputFilename = "";
-	logMsg = "";
+	log.str("");
 }
 
 
-inline void Log::setOutputFilename(std::string _outputFilename)
-{
-	outputFilename = _outputFilename;
-}
-
-
-inline void Log::clearLog()
-{
-	logMsg = "";
-}
-
-inline void Log::addLog(std::string _msg)
-{
-	logMsg += _msg;
-}
-
-
-inline void Log::addLog(std::stringstream & _msg)
-{
-	addLog(_msg.str());
-	_msg.str("");
-}
-
-
-inline void Log::writeLogToDisk(std::stringstream & _msg)
-{
-	addLog(_msg);
-	writeLogToDisk();
-}
-
-
-inline void Log::writeLogToDisk()
+inline void Log::writeToDisk()
 {
 	std::ofstream outputFile( outputFilename.c_str(), std::ios::out);
-	outputFile << logMsg;
+	outputFile << log.str();
 	outputFile.close();
 }
 
-inline void Log::appendLogToDisk()
-{
-	std::ofstream outputFile( outputFilename.c_str(), std::ios::out | std::ios::app);
-	outputFile << logMsg;
-	logMsg = "";
-	outputFile.close();
-}
-
-
-inline std::string Log::getLog()
-{
-	return logMsg;
-}
 
 
 

@@ -1,15 +1,16 @@
 {
 	"mpi-profiling" : true,
+	"log_prefix" : "struc_test",
 
 	"mochi" : true,
 	"mochi-database" :
 	{
-		"name" : "foo1",
+		"name" : "foo",
 		"db-type" : "ldb",
-		"name" : "test",
 		"conn-type" : "na+sm",
-		"address" : "na+sm://10426/0",
-		"multiplex" : 1
+		"address" : "na+sm://33254/0",
+		"multiplex" : 1,
+		"polling-rate" : 4
 	},
 
 

@@ -4,8 +4,6 @@
 #include <iostream>
 #include <sstream>
 
-
-#include "../utils/timer.hpp"
 #include "vtkDataStruct.h"
 
 #include <vtkSmartPointer.h>
@@ -36,8 +34,6 @@ class RectilinearGrid: public VTKDataStruct
 	int dims[3];
 	int extents[6];
 	int wholeExtents[6];
-
-	std::stringstream log;
 
 public:
 	RectilinearGrid();
@@ -71,23 +67,16 @@ public:
 	// Set n Get
 	int getNumVertices(){ return rectGrid->GetNumberOfPoints(); }
 	int getNumCells(){ return rectGrid->GetNumberOfCells(); }
-
-	// log
-	std::string getLog(){ return log.str(); }
 };
 
 
 
 inline RectilinearGrid::RectilinearGrid()
 {
-	Timer clock(1);
-
 	writer = vtkSmartPointer<vtkXMLPRectilinearGridWriter>::New();
 	rectGrid = vtkSmartPointer<vtkRectilinearGrid>::New();
 
 	pnts = vtkSmartPointer<vtkPoints>::New();
-
-	log << "RectilinearGrid RectilinearGrid took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -120,8 +109,6 @@ inline void RectilinearGrid::setWholeExtents(int minX, int maxX, int minY, int m
 template <typename T> 
 inline void RectilinearGrid::addPoint(T *pointData, int _dims)
 {	
-	Timer clock(1);
-
 	if (_dims == 1)
 	{
 		//pnts->InsertNextPoint(pointData[0], 0, 0);
@@ -130,8 +117,6 @@ inline void RectilinearGrid::addPoint(T *pointData, int _dims)
 		pnts->InsertNextPoint(pointData[0], pointData[1], 0);
 	else
 		pnts->InsertNextPoint(pointData[0], pointData[1], pointData[2]);
-
-	log << "RectilinearGrid addPoint took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
@@ -141,8 +126,6 @@ inline void RectilinearGrid::addPoint(T *pointData, int _dims)
 template <typename T>
 inline void RectilinearGrid::addScalarPointData(std::string varName, int numPoints, T *data)
 {
-	Timer clock(1);
-
 	vtkSOADataArrayTemplate<T>* temp = vtkSOADataArrayTemplate<T>::New();
 
 	temp->SetNumberOfTuples(numPoints);
@@ -152,16 +135,12 @@ inline void RectilinearGrid::addScalarPointData(std::string varName, int numPoin
 	rectGrid->GetPointData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "RectilinearGrid addScalarPointData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void RectilinearGrid::addVectorPointData(std::string varName, int numPoints, int numComponents, T *data)
 {
-	Timer clock(1);
-
 	vtkAOSDataArrayTemplate<T>* temp = vtkAOSDataArrayTemplate<T>::New();
 
 	temp->SetNumberOfTuples(numPoints);
@@ -171,16 +150,12 @@ inline void RectilinearGrid::addVectorPointData(std::string varName, int numPoin
 	rectGrid->GetPointData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "RectilinearGrid addVectorPointData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void RectilinearGrid::addScalarCellData(std::string varName, int numPoints, T *data)
 {
-	Timer clock(1);
-
 	vtkSOADataArrayTemplate<T>* temp = vtkSOADataArrayTemplate<T>::New();
 
 	temp->SetNumberOfComponents(1);
@@ -190,16 +165,12 @@ inline void RectilinearGrid::addScalarCellData(std::string varName, int numPoint
 	rectGrid->GetCellData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "RectilinearGrid addScalarCellData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void RectilinearGrid::addVectorCellData(std::string varName, int numPoints, int numComponents, T *data)
 {
-	Timer clock(1);
-
 	vtkAOSDataArrayTemplate<T>* temp = vtkAOSDataArrayTemplate<T>::New();
 
 	temp->SetNumberOfComponents(numComponents);
@@ -209,16 +180,12 @@ inline void RectilinearGrid::addVectorCellData(std::string varName, int numPoint
 	rectGrid->GetCellData()->AddArray(temp);
 
 	temp->Delete();
-
-	log << "RectilinearGrid addVectorCellData took: " << clock.stop(1) << " s" << std::endl;
 }
 
 
 template <typename T>
 inline void RectilinearGrid::addFieldData(std::string fieldName, T *data)
 {
-	Timer clock(1);
-
   	vtkAOSDataArrayTemplate<T>* temp = vtkAOSDataArrayTemplate<T>::New();
 
   	temp->SetNumberOfTuples(1);
@@ -227,31 +194,22 @@ inline void RectilinearGrid::addFieldData(std::string fieldName, T *data)
   	temp->SetArray(data, 1, false, true);
 
   	rectGrid->GetFieldData()->AddArray(temp);
-  	temp->Delete();
-
-
-	log << "RectilinearGrid addFieldData took: " << clock.stop(1) << " s" << std::endl;	  
+  	temp->Delete();  
 }
 
 //
 // Writing
 inline void RectilinearGrid::writeParts(int numPieces, int startPiece, int endPiece, std::string fileName)
 {
-	Timer clock(1);
-
 	writer->SetNumberOfPieces(numPieces);
 	writer->SetStartPiece(startPiece);
 	writer->SetEndPiece(endPiece);
 
 	write(fileName);
-
-	log << "RectilinearGrid writeParts took: " << clock.stop(1) << " s" << std::endl;
 }
 
 inline void RectilinearGrid::write(std::string fileName, int parallel)
 {	
-	Timer clock(1);
-
 	std::string outputFilename;
 	if (parallel == 1)
 	{
@@ -277,8 +235,6 @@ inline void RectilinearGrid::write(std::string fileName, int parallel)
   #endif
 
 	writer->Write();
-
-	log << "RectilinearGrid write took: " << clock.stop(1) << " s" << std::endl;
 }
 
 } // inwrap
