@@ -776,6 +776,11 @@ inline int InsituWrap::cleanup()
   #ifdef CATALYST_ENABLED
 	cat.finalize();
   #endif
+
+ //  #ifdef SENSEI_ENABLED
+	// if (SenseiOn)
+	// 	senseiFinalize();
+ //  #endif
 	return 1;
 }
 

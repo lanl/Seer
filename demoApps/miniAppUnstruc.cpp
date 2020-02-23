@@ -32,17 +32,8 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
 	int numPoints = 100;
-	int numTimesteps = 10;
+	int numTimesteps = 300;
 
-/*
-  #ifdef CATALYST_ENABLED
-	std::cout << "Catalyst enabvled" << std::endl;
- 	std::vector <std::string> catalystScripts = InWrap::catalystScriptChecker(argc, argv);
-	bool CatalystOn = (catalystScripts.size() > 0);
-	std::cout << "Catalyst on" << std::endl;
-	InWrap::CatalystAdaptor cataLystInSitu(catalystScripts.size(), catalystScripts);
-  #endif
-*/
 
   #ifdef INSITU_ON
 	InWrap::InsituWrap insitu;
@@ -104,25 +95,8 @@ int main(int argc, char *argv[])
 			data[i] = myRank;
 		}
 
-	  
-	/*
-	  #ifdef CATALYST_ENABLED
-		
-		InWrap::UnstructuredGrid temp;
-		temp.setPoints(&points[0], numPoints, VTK_VERTEX);
-		temp.addScalarData("pressure", numPoints, data);
-		
-		temp.addFieldData("time", &t);
-		temp.addFieldData("rank", &myRank);
-		temp.addFieldData("numRank", &numRanks);
-
-		cataLystInSitu.coProcess(temp.getGrid(), t / 1.0, t, t == (numTimesteps - 1));
-	  #endif
-	*/
 
       #ifdef INSITU_ON
-		insitu.timestepExecute(t);
-
 		InWrap::UnstructuredGrid temp;
 		temp.setPoints(&points[0], numPoints, VTK_VERTEX);
 		temp.addScalarData("pressure", numPoints, data);
@@ -130,6 +104,7 @@ int main(int argc, char *argv[])
 		temp.addFieldData("time", &t);
 		temp.addFieldData("rank", &myRank);
 		temp.addFieldData("numRank", &numRanks);
+
 
 	  #ifdef  CATALYST_ENABLED
 		if (insitu.isCatalystOn())
@@ -137,8 +112,9 @@ int main(int argc, char *argv[])
 			insitu.cat.coProcess(temp.getGrid(), t / 1.0, t, t == (numTimesteps - 1));
 			//std::this_thread::sleep_for(std::chrono::milliseconds(3000));		// uncomment  for Catalyst LIVE
 		}
-		else
-			temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
+		//else
+		//	temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
+	 
 	  #elif SENSEI_ENABLED
 
 		if (SenseiOn)
@@ -149,9 +125,13 @@ int main(int argc, char *argv[])
 			temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
 
 	  #else
-		temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
-      #endif
-	  #endif
+		//temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
+      #endif 
+
+		insitu.timestepExecute(t);
+
+	  #endif //insitu
+
 
 		if (myRank == 0)
 			std::cout << myRank << " ~ ts: " << t << std::endl;
@@ -160,9 +140,6 @@ int main(int argc, char *argv[])
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
-  #ifdef CATALYST_ENABLED
-	insitu.cat.finalize();
-  #endif
 
   #ifdef SENSEI_ENABLED
 	if (SenseiOn)
