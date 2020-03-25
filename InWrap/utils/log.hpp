@@ -5,9 +5,6 @@
 #include <sstream>
 #include <iostream>
 
-
-extern std::stringstream debugLog;	// Global log for all files
-
 namespace InWrap  
 { 
 
