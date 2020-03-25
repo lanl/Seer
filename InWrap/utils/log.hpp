@@ -6,8 +6,11 @@
 #include <iostream>
 
 
+extern std::stringstream debugLog;	// Global log for all files
+
 namespace InWrap  
 { 
+
 
 class Log
 {

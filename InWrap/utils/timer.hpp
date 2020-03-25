@@ -30,6 +30,7 @@ class Timer
 
   public:
 	Timer();
+	Timer(std::string name);
 	~Timer();
 
 	int start(std::string timerName);
@@ -42,6 +43,7 @@ class Timer
 };
 
 inline Timer::Timer() {}
+inline Timer::Timer(std::string name){ start(name); }
 inline Timer::~Timer() {}
 
 
