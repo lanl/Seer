@@ -1,3 +1,11 @@
+/*================================================================================
+This software is open source software available under the BSD-3 license.
+Copyright (c) 2019. Triad National Security, LLC.
+All rights reserved.
+Authors:
+ - Pascal Grosset
+================================================================================*/
+
 #pragma once
 
 #include <iostream>
@@ -34,6 +42,7 @@
 #ifdef CATALYST_ENABLED	
 	#include "utils/catalystAdaptor.h"
 #endif
+
 
 // VTK Helpers+++
 #include "vtkStructures/structuredGrid.h"

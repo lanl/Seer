@@ -1,6 +1,6 @@
 /*================================================================================
 This software is open source software available under the BSD-3 license.
-Copyright (c) 2017, Los Alamos National Security, LLC.
+Copyright (c) 2019. Triad National Security, LLC.
 All rights reserved.
 Authors:
  - Pascal Grosset
@@ -13,7 +13,6 @@ Authors:
 #include <string>
 
 #include "filterInterface.hpp"
-
 
 
 class GlobalMin : public FilterInterface
@@ -47,14 +46,16 @@ inline void GlobalMin::init(MPI_Comm mpiComm)
 }
 
 
-inline int execute(void *data, std::string dataType, int numDims, size_t *n)
+inline int GlobalMin::execute(void *data, std::string dataType, int numDims, size_t *n)
 {
-	Timer clock("min");
+	Timer clock("filter");
 
 	double localMin = std::numeric_limits<double>::max();
 
 	// Compute local minumum
+  #ifdef _OPENMP
 	#pragma omp parallel for collapse(2)
+  #endif
 	for (int d=0; d<numDims; d++)
 		for (size_t i=0; i<n[d]; i++)
 		{
@@ -76,8 +77,8 @@ inline int execute(void *data, std::string dataType, int numDims, size_t *n)
 	varValue["global_min"] = paramInfo("double", std::to_string(globalMin));
 
 
-	clock.stop("min");
-	debugLog << "global_min filter took " << clock.getDuration("min") << " s" << std::endl;
+	clock.stop("filter");
+	debugLog << "global_min filter took " << clock.getDuration("filter") << " s" << std::endl;
 
 	return 1;
 }

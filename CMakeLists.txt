@@ -55,6 +55,7 @@ if (ENABLE_CATALYST)
   	list( APPEND INWRAP_LIBS ParaView::PythonCatalyst VTK::CommonDataModel VTK::ParallelMPI VTK::IOParallelXML)
 
 	add_definitions(-DCATALYST_ENABLED)
+	add_definitions(-DHAVE_VTK)
 endif()
 
 
@@ -131,19 +132,41 @@ if (USE_MOCHI)
 endif()
 
 
-## Not Optional!!!
-
 # VTK
-#if (NOT HAVE_VTK)
-#	find_package(VTK REQUIRED)
-#	if (VTK_FOUND)
-#		include(${VTK_USE_FILE})
-#		add_definitions(-DHAVE_VTK)
-#	else()
-#		message(FATAL_ERROR "Could not find vtk!!!") 
-#	endif()
-#endif()
+if (NOT HAVE_VTK)
+	find_package(VTK REQUIRED)
+	if (VTK_FOUND)
+		include(${VTK_USE_FILE})
+		add_definitions(-DHAVE_VTK)
+	else()
+		message(FATAL_ERROR "Could not find vtk!!!") 
+	endif()
+endif()
 
+
+# VTK-m
+option(USE_VTK-m "Enable VTKm" OFF)
+if (USE_VTK-m)
+	find_package ( VTKm REQUIRED )
+
+	add_definitions(-DVTKM_ENABLED)
+	set(VTKM_ENABLED ON)
+endif()
+
+
+OPTION (USE_OpenMP "Use OpenMP" ON)
+if(USE_OpenMP)
+	find_package(OpenMP)
+	if(OPENMP_FOUND)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+	endif()
+endif()
+
+
+
+## Not Optional!!!
 
 # MPI
 find_package(MPI)
@@ -151,11 +174,14 @@ if (MPI_FOUND)
 	include_directories(${MPI_INCLUDE_PATH})
 	set(CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS})
 	set(CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_LINK_FLAGS})
-	SET(CMAKE_C_COMPILER mpicc)
-	SET(CMAKE_CXX_COMPILER mpicxx)
+	set(CMAKE_C_COMPILER mpicc)
+	set(CMAKE_CXX_COMPILER mpicxx)
 else()
 	message(FATAL_ERROR "Could not find any MPI installation!!!") 
 endif()
+
+
+
 
 
 # Applications
