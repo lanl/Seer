@@ -29,7 +29,7 @@ class Memory
 
 	void GetMemorySize(unsigned long &size, unsigned long &rss);
 
-public:
+  public:
 	Memory();
 	Memory(bool start);
 	~Memory() {};
@@ -58,7 +58,7 @@ public:
 	static bool release(void*& data, std::string datatype);
 };
 
-/* static*/ std::map<std::string, size_t> Memory::sizeOf = {
+std::map<std::string, size_t> Memory::sizeOf = {
 	{   "int", sizeof(int)},
 	{   "float", sizeof(float)},
 	{  "double", sizeof(double)},
@@ -246,5 +246,6 @@ inline void Memory::GetMemorySize(unsigned long &size, unsigned long &rss)
 	rss = (size_t) info.resident_size;
 	size = (size_t) info.virtual_size;
 }
+#endif
 
 }

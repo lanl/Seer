@@ -25,31 +25,34 @@ class GlobalMin : public FilterInterface
   	~GlobalMin(){};
 
 	void init(MPI_Comm mpiComm);
-    int execute(void *data, std::string dataType, int numDims, size_t *n);
+    int execute(InWrap::VTKDataStruct *simData);
     void close(){};
 };
 
 
-inline void GlobalMin::GlobalMin()
+inline GlobalMin::GlobalMin()
 {
 	myRank = 0;
 	numRanks = 0;
-	filterName = "global_min";
+	name = "global_min";
+	scope = "local";
+	outputType = "single";
 }
 
 
 inline void GlobalMin::init(MPI_Comm mpiComm)
 {
-	comm = _comm;
+	comm = mpiComm;
 	MPI_Comm_rank(comm, &myRank);
 	MPI_Comm_size(comm, &numRanks);
 }
 
 
-inline int GlobalMin::execute(void *data, std::string dataType, int numDims, size_t *n)
+inline int GlobalMin::execute(InWrap::VTKDataStruct *simData)
 {
-	Timer clock("filter");
+	InWrap::Timer clock("filter");
 
+	/*
 	double localMin = std::numeric_limits<double>::max();
 
 	// Compute local minumum
@@ -75,12 +78,10 @@ inline int GlobalMin::execute(void *data, std::string dataType, int numDims, siz
 
 	// store value in dictionary
 	varValue["global_min"] = paramInfo("double", std::to_string(globalMin));
-
+	*/
 
 	clock.stop("filter");
 	debugLog << "global_min filter took " << clock.getDuration("filter") << " s" << std::endl;
 
 	return 1;
 }
-
-

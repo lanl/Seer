@@ -1,29 +1,29 @@
 {
-    "mochi": true,
-    "mochi-database": {
-        "address": "ofi+tcp://192.168.101.186",
-        "port": ":1234",
-        "conn-type": "ofi+tcp",
-        "db-type": "ldb",
-        "multiplex": 1,
-        "name": "foo_test3",
-        "polling-rate" : 1
-    },
+	"mochi": true,
+	"mochi-database": {
+		"address": "ofi+tcp://192.168.101.186",
+		"port": ":1234",
+		"conn-type": "ofi+tcp",
+		"db-type": "ldb",
+		"multiplex": 1,
+		"name": "foo_test3",
+		"polling-rate" : 1
+	},
 
-    "log_prefix" : "struc_test",
-    "mpi-profiling": true,
+	"log_prefix" : "struc_test",
+	"mpi-profiling": true,
 
-    "papi": true,
-    "papi_counters": [
-        "PAPI_BR_UCN",
-        "PAPI_VEC_SP"
-    ],
-    "catalyst": true,
-    "catalyst-scripts": [
-        "/projects/insituperf/InWrap/scripts/catalyst/write_vtm.py"
-    ],
-    "events-to-record": [
-        "loop-time",
-        "comp-time"
-    ]
+	"papi": true,
+	"papi_counters": [
+		"PAPI_BR_UCN",
+		"PAPI_VEC_SP"
+	],
+	"catalyst": true,
+	"catalyst-scripts": [
+		"/projects/insituperf/InWrap/scripts/catalyst/write_vtm.py"
+	],
+	"events-to-record": [
+		"loop-time",
+		"comp-time"
+	]
 }

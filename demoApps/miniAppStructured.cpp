@@ -18,12 +18,14 @@
   #include "inSituWrap.hpp"
 #endif
 
+// Global log
+std::stringstream debugLog;
 
 int fib(int n) 
 { 
-   if (n <= 1) 
-      return n; 
-   return fib(n-1) + fib(n-2); 
+	if (n <= 1) 
+		return n; 
+	return fib(n-1) + fib(n-2); 
 } 
 
 
@@ -80,7 +82,6 @@ int main(int argc, char *argv[])
 		dims[1] = dimY = 6; 
 		dims[2] = dimZ = 8;
 
-
 		std::vector<double> points;
 		int numPoints = 0;
 		int numCells = 35;
@@ -118,7 +119,6 @@ int main(int argc, char *argv[])
 
 		for (int i = 0; i < numCells ; i++)
 		{
-
 			// Do some computatiton
 			int number = rand()%40 + 1;
 			int f = fib( number);
@@ -153,8 +153,8 @@ int main(int argc, char *argv[])
 
 			temp.setWholeExtents(0,numRanks, 0,dimY-1, 0,dimZ-1);
 
-	        temp.setDims(dimX, dimY, dimZ);
-	        temp.setExtents(myRank,myRank+1, 0,dimY-1, 0,dimZ-1);
+			temp.setDims(dimX, dimY, dimZ);
+			temp.setExtents(myRank,myRank+1, 0,dimY-1, 0,dimZ-1);
 
 
 			temp.setPoints(&points[0], numPoints);
@@ -168,6 +168,105 @@ int main(int argc, char *argv[])
 			temp.addScalarCellData("cell-data-scalar", numCells, cellData);
 			temp.addScalarCellData("cell-data-fact", numCells, cellDataFact);
 			temp.addScalarCellData("_rank", numCells, cellRankData);
+
+
+			/*
+			{
+				vtkSmartPointer<vtkPoints> points =
+					vtkSmartPointer<vtkPoints>::New();
+				points->InsertNextPoint(1,1,1);
+				points->InsertNextPoint(2,2,2);
+				points->InsertNextPoint(3,3,3);
+
+				vtkSmartPointer<vtkPolyData> polydata =
+					vtkSmartPointer<vtkPolyData>::New();
+				polydata->SetPoints(points);
+
+				vtkSmartPointer<vtkFloatArray> floatArray =
+					vtkSmartPointer<vtkFloatArray>::New();
+				floatArray->SetNumberOfValues(3);
+				floatArray->SetNumberOfComponents(1);
+				floatArray->SetName("FloatArray");
+				for(vtkIdType i = 0; i < 3; i++)
+				{
+					floatArray->SetValue(i,2);
+				}
+				polydata->GetPointData()->AddArray(floatArray);
+
+
+				vtkSmartPointer<vtkIntArray> intArray =
+					vtkSmartPointer<vtkIntArray>::New();
+				intArray->SetNumberOfValues(3);
+				intArray->SetNumberOfComponents(1);
+				intArray->SetName("IntArray");
+				for(vtkIdType i = 0; i < 3; i++)
+				{
+					intArray->SetValue(i,2);
+				}
+
+				polydata->GetPointData()->AddArray(intArray);
+
+				for(vtkIdType i = 0; i < 3; i++)
+				{
+					double p[3];
+					polydata->GetPoint(i,p);
+					vtkFloatArray* pointsFloatArray = vtkFloatArray::SafeDownCast(polydata->GetPointData()->GetArray("FloatArray"));
+					vtkIntArray* pointsIntArray = vtkIntArray::SafeDownCast(polydata->GetPointData()->GetArray("IntArray"));
+					std::cout << "Point " << i << " : " << p[0] << " " << p[1] << " " << p[2] << " "
+							<< pointsFloatArray->GetValue(i) << " " << pointsIntArray->GetValue(i) << std::endl;
+				}
+
+				polydata->GetPointData()->NullPoint(1);
+				polydata->Modified();
+
+				for(vtkIdType i = 0; i < 3; i++)
+				{
+					double p[3];
+					polydata->GetPoint(i,p);
+					vtkFloatArray* pointsFloatArray = vtkFloatArray::SafeDownCast(polydata->GetPointData()->GetArray("FloatArray"));
+					vtkIntArray* pointsIntArray = vtkIntArray::SafeDownCast(polydata->GetPointData()->GetArray("IntArray"));
+					std::cout << "Point " << i << " : " << p[0] << " " << p[1] << " " << p[2] << " "
+							<< pointsFloatArray->GetValue(i) << " " << pointsIntArray->GetValue(i) << std::endl;
+				}
+			}
+			*/
+
+			/*
+			temp.strucGrid->Modified();
+			
+			vtkIdType numberOfCellArrays = temp.strucGrid->GetCellData()->GetNumberOfArrays();
+  			std::cout << "Number of CellData arrays: " << numberOfCellArrays << std::endl;
+			for(vtkIdType i = 0; i < numberOfCellArrays; i++)
+			{
+				int dataTypeID = temp.strucGrid->GetCellData()->GetArray(i)->GetDataType();
+				std::cout << "Array " << i << ": " << temp.strucGrid->GetCellData()->GetArrayName(i)
+						<< " (type: " << dataTypeID << ")" << std::endl;
+			}
+
+			std::string arrayName = "vert-data";
+
+			
+			vtkIdType idNum = temp.strucGrid->GetNumberOfPoints();
+			std::cout << "idNum: " << idNum << std::endl;
+
+			vtkSmartPointer<vtkDoubleArray> array = vtkDoubleArray::SafeDownCast(temp.strucGrid->GetPointData()->GetArray(arrayName.c_str()));
+			if (array)
+			{
+				for(int i = 0; i < idNum; i++)
+				{
+					double value;
+					value = array->GetValue(i);
+					std::cout << i << ": " << value << std::endl;
+				}
+			}
+			else
+			{
+				std::cout << "The file does not have a cellData array named " << arrayName << std::endl;
+			}
+			*/
+
+			insitu.simData = &temp;
+
 
 		  #ifdef  CATALYST_ENABLED
 			if (insitu.isCatalystOn())

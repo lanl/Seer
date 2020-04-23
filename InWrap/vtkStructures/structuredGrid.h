@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include <vtkSmartPointer.h>
+#include <vtkFloatArray.h>
 #include <vtkDataSet.h>
 #include <vtkStructuredGrid.h>
 #include <vtkXMLPStructuredGridWriter.h>
@@ -180,8 +181,6 @@ inline void StructuredGrid::addFieldData(std::string fieldName, T *data, int num
 
 	temp->Delete();
 }
-
-
 
 
 template <typename T> 

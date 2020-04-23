@@ -17,75 +17,82 @@ Authors:
 #include "log.hpp"
 #include "timer.hpp"
 #include "memory.hpp"
+#include "vtkDataStruct.h"
 
 
 struct paramInfo
 {
-    std::string dataType;
-    std::string value;
+	std::string dataType;
+	std::string value;
 
-    paramInfo(std::string type, std::string val);
+	paramInfo(){};
+	
+	paramInfo(std::string type, std::string val)
+	{
+		dataType = type;
+		value = val;
+	}
 
-    template<class T>
-    T getValue()
-    {
-        std::stringstream sstr(value);
-        T val;
-        sstr >> val;
-        return val;
-    }
+	template<class T>
+	T getValue()
+	{
+		std::stringstream sstr(value);
+		T val;
+		sstr >> val;
+		return val;
+	}
 };
 
 
 class FilterInterface
 {
   protected:
-    int myRank;
-    int numRanks;
-    MPI_Comm comm; 
+	int myRank;
+	int numRanks;
+	MPI_Comm comm; 
 
-    std::string filterName;
+	std::string name;
+	std::string scope;		 	// affect whole data or a scalar | whole, single
+	std::string outputType; 	// single, array, dataset
 
-    std::map<std::string, paramInfo> varValue;  // used for output or more inputs are needed
+	std::map<std::string, paramInfo> varValue;  // used for output or more inputs are needed
 
 
   public:
-    void *outputData;   // if a filter needs to return a data array
+	void *outputData;   // if a filter needs to return a data array
 
-    virtual void init(MPI_Comm mpiComm) = 0;
-    virtual int execute(void *data, std::string dataType, int numDims, size_t *n) = 0;
-    virtual void close() = 0;
+	virtual void init(MPI_Comm mpiComm) = 0;
+	virtual int execute(InWrap::VTKDataStruct *simData) = 0;
+	virtual void close() = 0;
 
-
-    void insertParam(std::string name, std::string dataType, std::string value);
-    paramInfo getParamInfo(std::string name);
-    template<class T> T getParamValue(std::string name);
-    std::string getName();
+	void insertParam(std::string name, std::string dataType, std::string value);
+	paramInfo getParamInfo(std::string name);
+	template<class T> T getParamValue(std::string name);
+	std::string getName();
 };
 
 
 
 inline void FilterInterface::insertParam(std::string name, std::string dataType, std::string value)
 {
-    varValue[name] = paramInfo(dataType, value);
+	varValue[name] = paramInfo(dataType, value);
 }
 
 
 inline paramInfo FilterInterface::getParamInfo(std::string name)
 {
-    return varValue[name];
+	return varValue[name];
 }
 
 
 template<class T>
 inline T FilterInterface::getParamValue(std::string name)
 {
-    return (varValue[name]).getValue();
+	return (varValue[name]).value;
 }
 
 
 inline std::string FilterInterface::getName()
 { 
-    return filterName; 
+	return name; 
 }
-

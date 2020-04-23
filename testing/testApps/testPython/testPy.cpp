@@ -1,87 +1,76 @@
-
-#include <iostream>
-#include <vector>
+#include <stdio.h>
+#include <Python.h>
+#include <numpy/arrayobject.h>
 #include "pyHelper.hpp"
 
-int main()
+
+int main(int argc, char *argv[])
 {
-    CPyInstance pyInstance;
+	if (argc < 3) {
+        fprintf(stderr,"Usage: call pythonfile funcname [args]\n");
+        return 1;
+    }
 
+	Py_Initialize();
 
-	//PyRun_SimpleString("hello.py");
-    
+	CPyInstance hInstance;
+	
+	PyRun_SimpleString("import sys");
+	PyRun_SimpleString("sys.path.append(\"../modules\")");
 
+	PyErr_Print();
+	CPyObject pName = PyUnicode_FromString(argv[1]);
+	CPyObject pModule = PyImport_Import(pName);
 
-	// CPyObject pName = PyUnicode_FromString("hello");
-	// CPyObject pModule = PyImport_Import(pName);
+	int dims[1];
+	dims[0] = 4;
+	float *array = new float[dims[0]];
+	for (int i=0; i<dims[0]; i++)
+		array[i] = i*5;
 
-	// if (pModule)
-	// {
-	// 	CPyObject pFunc = PyObject_GetAttrString(pModule, "sum");
-	// 	if (pFunc && PyCallable_Check(pFunc))
-	// 	{
-	// 		int array[2] = {7, 6};
-	// 		int numArgs = 2;
-
-	// 		CPyObject pArgs = PyTuple_New(numArgs);
-	// 		for (int i=0; i<numArgs; i++)
-	// 		{
-    //         	PyTuple_SetItem(pArgs, i, PyLong_FromLong(array[i]));
-	// 		}
-
-	// 		CPyObject pValue = PyObject_CallObject(pFunc, pArgs);
-	// 		std::cout << "sum = " <<  PyLong_AsLong(pValue) << std::endl;
-	// 	}
-	// 	else
-	// 	{
-	// 		std::cout <<"ERROR: function getInteger()\n" << std::endl;
-	// 	}
-	// }
-	// else
-	// {
-	// 	std::cout <<"ERROR: Module not imported\n" << std::endl;
-	// }
-
-
-
-	CPyObject pModule = pyInstance.loadModule("hello");
 	if (pModule)
 	{
-		CPyObject pFunc = pyInstance.runFunction(pModule, "sum");
-		if (pFunc)
+		CPyObject pFunc = PyObject_GetAttrString(pModule, argv[2]);
+		if (pFunc && PyCallable_Check(pFunc))
 		{
-			int array[2] = {7, 6};
+			// PyObject *pArgs, *pValue1, *pValue2;
+			// pArgs = PyTuple_New(2);
+			// pValue1 = PyLong_FromLong(6);
+			// pValue2 = PyLong_FromLong(7);
+			// PyTuple_SetItem(pArgs, 0, pValue1);
+			// PyTuple_SetItem(pArgs, 1, pValue2);
 
-			std::vector<float> vec;
-			vec.push_back(1);
-			vec.push_back(2);
-			vec.push_back(3);
-			vec.push_back(4);
+			// CPyObject pValue = PyObject_CallObject(pFunc, pArgs);
+			// printf("product = %ld\n", PyLong_AsLong(pValue));
 
-			int numArgs = 2;
+			import_array();
 
-			CPyObject pArgs = PyTuple_New(3);
+			PyObject *pArgs, *arr;
+			npy_intp dim[1];
+			dim[0] = 4;
+			//arr = PyArray_SimpleNewFromData(1, &dim[0], NPY_FLOAT32, reinterpret_cast<void*>(array));
+			arr = PyArray_SimpleNewFromData(1, &dim[0], NPY_FLOAT32, array);
+			//arr = PyArray_SimpleNewFromData(1, dim, NPY_FLOAT64, &array);
 
+			pArgs = PyTuple_New(1);
+    		PyTuple_SetItem(pArgs,0, arr);
 
-			//CPyObject pxVec = PyTuple_New(vec.size());
-			//for (int i=0; i<vec.size(); i++)
-            //	PyTuple_SetItem(pxVec, i, PyFloat_FromDouble(vec[i]) );
-
-			CPyObject pxVec = PyArray_SimpleNewFromData(1, 4, NPY_FLOAT16, &vec[0])
-
-			PyTuple_SetItem(pArgs, 0, PyLong_FromLong(array[0]));
-			PyTuple_SetItem(pArgs, 1, pxVec);
-
-
-			PyTuple_SetItem(pArgs, 2, PyLong_FromLong(vec.size()));
-
-			CPyObject pValue = PyObject_CallObject(pFunc, pArgs);
-	 		std::cout << "sum = " <<  PyLong_AsLong(pValue) << std::endl;
+    		CPyObject pValue = PyObject_CallObject(pFunc, pArgs);
+			
+		}
+		else
+		{
+			std::cout << "ERROR: function getInteger()" << std::endl;
 		}
 	}
-
+	else
+	{
+		PyErr_Print();
+		std::cout << "ERROR: Module vvvv not imported"<< std::endl;
+	}
 
 	return 0;
 }
 
-// export PYTHONPATH=/home/pascal/projects/InWrap/testing/testApps/testPython/:$PYTHONPATH
+// Example run:
+// ./testPy multiply testArray

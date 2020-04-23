@@ -12,6 +12,8 @@ if os.path.exists(json_input_file) == False:
 	exit()
 
 
+
+
 # Lauch sever from node 0
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()

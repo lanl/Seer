@@ -23,6 +23,9 @@
 //	#include "catalystAdaptor.h"
 //#endif
 
+// Global log
+std::stringstream debugLog;
+
 
 int main(int argc, char *argv[])
 {
@@ -34,7 +37,7 @@ int main(int argc, char *argv[])
 	int numPoints = 100;
 	int numTimesteps = 10;
 
-/*
+  /*
   #ifdef CATALYST_ENABLED
 	std::cout << "Catalyst enabvled" << std::endl;
  	std::vector <std::string> catalystScripts = InWrap::catalystScriptChecker(argc, argv);
@@ -42,7 +45,7 @@ int main(int argc, char *argv[])
 	std::cout << "Catalyst on" << std::endl;
 	InWrap::CatalystAdaptor cataLystInSitu(catalystScripts.size(), catalystScripts);
   #endif
-*/
+  */
 
   #ifdef INSITU_ON
 	InWrap::InsituWrap insitu;

@@ -20,6 +20,9 @@ Authors:
 #include <mpi.h>
 #include <utility>
 
+#include "filters/filterInterface.hpp"
+#include "filters/filterIncludes.hpp"
+#include "filters/filterFactory.hpp"
 
 #include "utils/argsParser.hpp"
 #include "utils/json.hpp"
@@ -27,6 +30,7 @@ Authors:
 #include "utils/utils.hpp"
 #include "utils/timer.hpp"
 #include "utils/strConvert.hpp"
+#include "utils/dataLayout.hpp"
 
 
 #ifdef INSITU_ON
@@ -55,20 +59,25 @@ Authors:
 namespace InWrap
 {
 
-
 class InsituWrap
 {
 	bool insitu_on;
-	nlohmann::json jsonInput;	// json
+	nlohmann::json jsonInput;
 
 	int numRanks;
 	int myRank;
 	int numTimesteps;
+	int numFilters;
 
 	int currentTimestep;
 
-	std::stringstream log;		// logging
 	std::string logName;
+
+	// Filters
+	FilterInterface *filterMgr;
+	std::vector<std::string> filters;
+	std::map< std::string, std::string > filterParams;
+
 
 
 	// Mochi
@@ -79,6 +88,7 @@ class InsituWrap
 
 	int currentPollingCount;
 	int pollIteration;
+
   #ifdef MOCHI_ENABLED
 	MochiInterface mochi;
   #endif
@@ -112,20 +122,25 @@ class InsituWrap
 	std::vector<std::string> events;	// non-papi event 
 
   public:
-  	#ifdef CATALYST_ENABLED
+	#ifdef CATALYST_ENABLED
 		CatalystAdaptor cat;
-  	#endif
+	#endif
+
+	// Sim data
+	VTKDataStruct *simData;
+
+
 
   public:
-  	InsituWrap();
-  	~InsituWrap();
+	InsituWrap();
+	~InsituWrap();
 
-  	int init(int argc, char* argv[], int myRank, int numRanks);
-  	int cleanup();
-  	void print();
+	int init(int argc, char* argv[], int myRank, int numRanks);
+	int cleanup();
+	void print();
 
-  	int timestepInit();
-  	int timestepExecute(int ts);
+	int timestepInit();
+	int timestepExecute(int ts);
 
   	int recordEvent(std::string name, std::string value);
   	int getEvent(std::string name, std::string &value);
@@ -138,7 +153,6 @@ class InsituWrap
 
   	void createVTKStruct(std::string strucName);
 };
-
 
 
 inline InsituWrap::InsituWrap()
@@ -166,6 +180,7 @@ inline InsituWrap::InsituWrap()
 	myRank = 0;
 	numRanks = 0;
 	numTimesteps= 0;
+	numFilters = 0;
 
 	currentTimestep = 0;
 }
@@ -222,8 +237,8 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 	myRank = _myRank;
 	numRanks = _numRanks;
 
-	log << "My rank: " << myRank << std::endl;
-	log << "Num ranks: " << numRanks << std::endl;
+	debugLog << "My rank: " << myRank << std::endl;
+	debugLog << "Num ranks: " << numRanks << std::endl;
 
 	//
 	// Read in  name of insitu config file if it exists
@@ -306,7 +321,6 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 	{
 		std::string poll_iteration = jsonInput["polling-rate"];
 		pollIteration = InWrap::to_int(poll_iteration);
-		
 	}
 	else
 		pollIteration = 1;
@@ -321,7 +335,7 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 	if ( jsonInput.find("sensei") != jsonInput.end() )
 	{
 		sensei_on = jsonInput["sensei"];
-		log << "sensei on" << std::endl;
+		debugLog << "sensei on" << std::endl;
 	}
 
 
@@ -329,7 +343,7 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		for (int i=0; i<jsonInput["events-to-record"].size(); i++)
 		{
 			events.push_back( jsonInput["events-to-record"][i] );
-			log << "event: " << jsonInput["events-to-record"][i] << std::endl;
+			debugLog << "event: " << jsonInput["events-to-record"][i] << std::endl;
 		}
 
 	clock.stop("initialization");
@@ -351,7 +365,7 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 				std::string papi_counter = jsonInput["papi_counters"][i];
 				papiEvent.addPapiEvent( papi_counter );
 
-				log << "papi event: " << papi_counter << std::endl;
+				debugLog << "papi event: " << papi_counter << std::endl;
 			}
 		}
 	} 
@@ -393,7 +407,7 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		// push some values to the mochi server
 		if (mochi_on)
 		{
-			log << "mochi on" << std::endl;
+			debugLog << "mochi on" << std::endl;
 			mochi.init(mochi_address, mochi_multiplex, mochi_database);
 
 			if (myRank == 0)
@@ -464,22 +478,21 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		if (mpi_profiling_on)
 		{
 			MPI_Pcontrol(1);
-			log << "mpi profiling on" << std::endl;
+			debugLog << "mpi profiling on" << std::endl;
 		}
 	}
 
 	clock.stop("init");
-	log << "InsituWrap init initialization took : " << clock.getDuration("initialization") << " s" << std::endl;
-	log << "InsituWrap init papi took : " << clock.getDuration("papi") << " s" << std::endl;
-	log << "InsituWrap init mochi took : " << clock.getDuration("mochi") << " s" << std::endl;
-	log << "InsituWrap init catalyst took : " << clock.getDuration("catalyst") << " s" << std::endl;
-	log << "InsituWrap init took: " << clock.getDuration("init") << " s" << std::endl;
+	debugLog << "InsituWrap init initialization took : " << clock.getDuration("initialization") << " s" << std::endl;
+	debugLog << "InsituWrap init papi took : " << clock.getDuration("papi") << " s" << std::endl;
+	debugLog << "InsituWrap init mochi took : " << clock.getDuration("mochi") << " s" << std::endl;
+	debugLog << "InsituWrap init catalyst took : " << clock.getDuration("catalyst") << " s" << std::endl;
+	debugLog << "InsituWrap init took: " << clock.getDuration("init") << " s" << std::endl;
 
-	InWrap::writeLog(logName, log.str());
+	InWrap::writeLog(logName, debugLog.str());
 
 	return 1;
 }
-
 
 
 
@@ -505,9 +518,9 @@ inline int InsituWrap::timestepInit()
 	if (mpi_profiling_on)
 		MPI_Pcontrol(2);
 
-	clock.stop("init");
-	log << "InsituWrap timestepInit papi took: " << clock.getDuration("papi") << " s" << std::endl;
-	log << "InsituWrap timestepInit took: " << clock.getDuration("timestepInit") << " s" << std::endl;
+	clock.stop("timestepInit");
+	debugLog << "InsituWrap timestepInit papi took: " << clock.getDuration("papi") << " s" << std::endl;
+	debugLog << "InsituWrap timestepInit took: " << clock.getDuration("timestepInit") << " s" << std::endl;
 
 	return 1;
 }
@@ -538,7 +551,7 @@ inline int InsituWrap::timestepExecute(int ts)
 			if (mochi_on)
 			{
 				std::string key   = papiEvent.getPapiEventName(e) + "_" + std::to_string( myRank );
-    			std::string value = std::to_string( papiEvent.getHwdValue(e) );
+				std::string value = std::to_string( papiEvent.getHwdValue(e) );
    				mochi.putKeyValue(key, value);
 
 				std::cout << myRank << " ~ " << ts << " : mochi on, papi: " << key << ", " << value << std::endl;
@@ -557,7 +570,7 @@ inline int InsituWrap::timestepExecute(int ts)
 	if (mochi_on && myRank == 0)
 	{
 		std::string key   = "current_timestep";
-    	std::string value = std::to_string( ts );
+		std::string value = std::to_string( ts );
 		mochi.putKeyValue(key, value);
 
 		std::cout << myRank << " ~ " << ts << " output current ts " << std::endl;
@@ -582,20 +595,10 @@ inline int InsituWrap::timestepExecute(int ts)
 
 			std::vector<std::string> new_keys_list = mochi.listKeysWithPrefix("NEW_KEY");
 
-			//if ( mochi.existsKey("NEW_KEY") )
 			for (int k=0; k<new_keys_list.size(); k++)
 			{
-				// // Loop until we are ready
-				// std::string key_val = mochi.getValue("NEW_KEY");
-				// while (key_val == "0")
-				// {
-				// 	key_val = mochi.getValue("NEW_KEY");
-				// 	std::cout << "key_val: " << key_val << std::endl;
-				// }
-
-
 				std::string key_val = mochi.getValue(new_keys_list[k]);
-				log << "key: " << new_keys_list[k] << ", value: " << key_val << std::endl;
+				debugLog << "key: " << new_keys_list[k] << ", value: " << key_val << std::endl;
 
 				std::vector<std::string> keysInDB;
 		  	  #ifdef PAPI_ENABLED
@@ -606,12 +609,12 @@ inline int InsituWrap::timestepExecute(int ts)
 
 					if (foundKeys.size() > 0)
 					{
-						log << ts << " ADD_PAPI  found " << foundKeys.size() << std::endl;
+						debugLog << ts << " ADD_PAPI  found " << foundKeys.size() << std::endl;
 
 						std::vector<std::string> foundVals;
 						for (int i=0; i<foundKeys.size(); i++)
 						{
-							log << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
+							debugLog << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
 							foundVals.push_back( mochi.getValue(foundKeys[i]) );
 							keysInDB.push_back(foundKeys[i]);
 						}
@@ -625,13 +628,13 @@ inline int InsituWrap::timestepExecute(int ts)
 							}
 							else
 							{
-								log << ts << " ADDed" << foundVals[i] << std::endl;
+								debugLog << ts << " ADDed" << foundVals[i] << std::endl;
 								mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
 							}
 						}
 					}
 
-					log << ts << " done adding new papi keys " << std::endl;
+					debugLog << ts << " done adding new papi keys " << std::endl;
 				}
 
 
@@ -641,12 +644,12 @@ inline int InsituWrap::timestepExecute(int ts)
 
 					if (foundKeys.size() > 0)
 					{
-						log << ts << " REMOVE_PAPI  found " << foundKeys.size() << std::endl;
+						debugLog << ts << " REMOVE_PAPI  found " << foundKeys.size() << std::endl;
 
 						std::vector<std::string> foundVals;
 						for (int i=0; i<foundKeys.size(); i++)
 						{
-							log << ts << " REMOVE foundKeys[i]" << foundKeys[i] << std::endl;
+							debugLog << ts << " REMOVE foundKeys[i]" << foundKeys[i] << std::endl;
 							foundVals.push_back( mochi.getValue(foundKeys[i]) );
 							keysInDB.push_back(foundKeys[i]);
 						}
@@ -660,13 +663,13 @@ inline int InsituWrap::timestepExecute(int ts)
 							}
 							else
 							{
-								log << ts << " Removed" << foundVals[i] << std::endl;
+								debugLog << ts << " Removed" << foundVals[i] << std::endl;
 								mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
 							}
 						}
 					}
 
-					log << " done removing papi keys " << std::endl;
+					debugLog << " done removing papi keys " << std::endl;
 				}
 
 				// Put new key in mochi database
@@ -689,12 +692,12 @@ inline int InsituWrap::timestepExecute(int ts)
 
 						if (foundKeys.size() > 0)
 						{
-							log << ts << "ADD_CATALYST_SCRIPT  found " << foundKeys.size() << std::endl;
+							debugLog << ts << "ADD_CATALYST_SCRIPT  found " << foundKeys.size() << std::endl;
 
 							std::vector<std::string> foundVals;
 							for (int i=0; i<foundKeys.size(); i++)
 							{
-								log << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
+								debugLog << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
 								foundVals.push_back( mochi.getValue(foundKeys[i]) );
 								keysInDB.push_back(foundKeys[i]);
 							}
@@ -702,12 +705,12 @@ inline int InsituWrap::timestepExecute(int ts)
 
 							for (int i=0; i<foundVals.size(); i++)
 							{
-								log << ts << " ADDed foundVals[i]" << foundVals[i] << std::endl;
+								debugLog << ts << " ADDed foundVals[i]" << foundVals[i] << std::endl;
 								catalyst_scripts.push_back(foundVals[i]);	// Add script
 							}
 						}
 
-						log << ts << " done adding new catalyst " << std::endl;
+						debugLog << ts << " done adding new catalyst " << std::endl;
 					}
 
 
@@ -717,12 +720,12 @@ inline int InsituWrap::timestepExecute(int ts)
 
 						if (foundKeys.size() > 0)
 						{
-							log << ts << "REMOVE_CATALYST_SCRIPT  found " << foundKeys.size() << std::endl;
+							debugLog << ts << "REMOVE_CATALYST_SCRIPT  found " << foundKeys.size() << std::endl;
 
 							std::vector<std::string> foundVals;
 							for (int i=0; i<foundKeys.size(); i++)
 							{
-								log << ts << " REMOVE foundKeys[i]" << foundKeys[i] << std::endl;
+								debugLog << ts << " REMOVE foundKeys[i]" << foundKeys[i] << std::endl;
 								foundVals.push_back( mochi.getValue(foundKeys[i]) );
 								keysInDB.push_back(foundKeys[i]);
 							}
@@ -744,8 +747,41 @@ inline int InsituWrap::timestepExecute(int ts)
 					// Reinitialize catalyst
 					cat.init(catalyst_scripts.size(), catalyst_scripts);
 				}
-		      #endif //CATALYST_ENABLED
+			  #endif //CATALYST_ENABLED
 
+
+				// Process Filters
+				{
+					std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_FILTER");
+
+					if (foundKeys.size() > 0)
+					{
+						debugLog << ts << "ADD_FILTER  found " << foundKeys.size() << std::endl;
+
+						// Filter format
+						// Filtername~Variable-to-act-n~params:param_1,param_2,param_n~...
+						std::string filterName;
+						std::string filterValue;
+						filterParams[filtername] = fiterValue;
+
+						std::vector<std::string> foundVals;
+						for (int i=0; i<foundKeys.size(); i++)
+						{
+							debugLog << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
+							foundVals.push_back( mochi.getValue(foundKeys[i]) );
+							keysInDB.push_back(foundKeys[i]);
+						}
+
+
+						for (int i=0; i<foundVals.size(); i++)
+						{
+							debugLog << ts << " ADDed foundVals[i]" << foundVals[i] << std::endl;
+							catalyst_scripts.push_back(foundVals[i]);	// Add script
+						}
+					}
+				}
+
+				// Mochi Cleanup
 				MPI_Barrier(MPI_COMM_WORLD);
 				if (myRank == 0)
 				{
@@ -761,22 +797,41 @@ inline int InsituWrap::timestepExecute(int ts)
 	}
   #endif //MOCHI_ENABLED
 	clock.stop("mochi_polling");
-  
+
+
+	// Apply Filters
+	for (int i=0; i<filters.size(); i++)
+	{
+		filterMgr = FilterFactory::createFilter( filters[i] );
+		if (filterMgr == NULL)
+		{
+			if (myRank == 0)
+				std::cout << "Unsupported filter: " << filters[i] << " ... skipping!" << std::endl;
+
+			debugLog << "Unsupported filter: " << filters[i] << " ... skipping!" << std::endl;
+			continue;
+		}
+
+		filterMgr->init();
+		
+		filteMgr->execute(simData);
+		filterMgr->close();
+		//applyFilter(filterDic.key(),filterDic.value());  // filtername, data
+	}
+
 
 	currentTimestep++;
 
 	clock.stop("timestepExecute");
-	log << "InsituWrap timestepExecute papi took: " << clock.getDuration("papi") << " s" << std::endl;
-	log << "InsituWrap timestepExecute mochi took: " << clock.getDuration("mochi") << " s" << std::endl;
-	log << "InsituWrap timestepExecute polling took: " << clock.getDuration("mochi_polling") << " s" << std::endl;
-	log << "InsituWrap timestepExecute took: " << clock.getDuration("timestepExecute") << " s" << std::endl;
+	debugLog << "InsituWrap timestepExecute papi took: " << clock.getDuration("papi") << " s" << std::endl;
+	debugLog << "InsituWrap timestepExecute mochi took: " << clock.getDuration("mochi") << " s" << std::endl;
+	debugLog << "InsituWrap timestepExecute polling took: " << clock.getDuration("mochi_polling") << " s" << std::endl;
+	debugLog << "InsituWrap timestepExecute took: " << clock.getDuration("timestepExecute") << " s" << std::endl;
 
-	InWrap::writeLog(logName, log.str());
-  
+	InWrap::writeLog(logName, debugLog.str());
+
 	return 1;
 }
-
-
 
 
 

@@ -100,9 +100,11 @@ inline CPyObject CPyInstance::loadModule(std::string module)
 	CPyObject pName = PyUnicode_FromString(module.c_str());
 	CPyObject pModule = PyImport_Import(pName);
 
+	std::cout << "module " << module << std::endl;
+
 	if (!pModule)
 	{
-		std::cout <<"ERROR: Module " << module << " not imported!" << std::endl;
+		std::cout <<"ERROR: Module --- " << module << " not imported!" << std::endl;
 		return NULL;
 	}
 

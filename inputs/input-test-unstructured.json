@@ -1,25 +1,25 @@
 {
 	"mochi": true,
-    "mochi-database": 
-    {
-        "address": "ofi+tcp://192.168.101.184",
-        "port": ":1234",
-        "conn-type": "ofi+tcp",
-        "db-type": "ldb",
-        "multiplex": 1,
-        "name": "struc1"
-    },
+	"mochi-database": 
+	{
+		"address": "ofi+tcp://192.168.101.184",
+		"port": ":1234",
+		"conn-type": "ofi+tcp",
+		"db-type": "ldb",
+		"multiplex": 1,
+		"name": "struc1"
+	},
 
-    "mpi-profiling": true,
+	"mpi-profiling": true,
 
-    "papi": true,
+	"papi": true,
 	"papi_counters": 
 	[ 
 		"PAPI_BR_UCN", 
 		"PAPI_VEC_SP"
 	],
 
-    "catalyst": false,
+	"catalyst": false,
 	"catalyst-scripts": 
 	[
 		"/home/pascal/projects/SciDAC/InSituWriters/InWrap/scripts/catalyst/miniAppUnstr_views.py"
