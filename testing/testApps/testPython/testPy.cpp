@@ -52,7 +52,8 @@ int main(int argc, char *argv[])
 			arr = PyArray_SimpleNewFromData(1, &dim[0], NPY_FLOAT32, array);
 			//arr = PyArray_SimpleNewFromData(1, dim, NPY_FLOAT64, &array);
 
-			pArgs = PyTuple_New(1);
+			int n = 1;
+			pArgs = PyTuple_New(n);
     		PyTuple_SetItem(pArgs,0, arr);
 
     		CPyObject pValue = PyObject_CallObject(pFunc, pArgs);
@@ -60,13 +61,14 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			std::cout << "ERROR: function getInteger()" << std::endl;
+			PyErr_Print();
+			std::cout << "ERROR: function not found" << std::endl;
 		}
 	}
 	else
 	{
 		PyErr_Print();
-		std::cout << "ERROR: Module vvvv not imported"<< std::endl;
+		std::cout << "ERROR: Module not imported"<< std::endl;
 	}
 
 	return 0;
