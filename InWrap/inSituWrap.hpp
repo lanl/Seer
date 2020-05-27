@@ -127,6 +127,7 @@ class InsituWrap
   	int isVeloCOn(){ return veloc_on; }
   	int isMochiOn(){ return mochi_on; }
 
+  	std::vector<std::string> filterWithPrefix(std::string prefix, std::vector<std::string> allKeys);
   	void createVTKStruct(std::string strucName);
 };
 
@@ -199,6 +200,19 @@ inline void InsituWrap::print()
 		std::cout << it->first << " : " << it->second << std::endl;
 }
 
+
+inline std::vector<std::string> InsituWrap::filterWithPrefix(std::string prefix, std::vector<std::string> allKeys)
+{
+	std::vector<std::string> found;
+
+	for (int i=0; i<allKeys.size(); i++)
+	{
+		if (allKeys[i].compare(0, prefix.length(), prefix) == 0)
+			found.push_back(allKeys[i]);
+	}
+
+	return found;
+}
 
 
 inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
@@ -571,7 +585,9 @@ inline int InsituWrap::timestepExecute(int ts)
 		{
 			currentPollingCount = 0; // poll mochi server at every timestep 
 
+			clock.start("find_new_keys");
 			std::vector<std::string> new_keys_list = mochi.listKeysWithPrefix("NEW_KEY");
+			clock.stop("find_new_keys");
 
 			//if ( mochi.existsKey("NEW_KEY") )
 			for (int k=0; k<new_keys_list.size(); k++)
@@ -584,16 +600,27 @@ inline int InsituWrap::timestepExecute(int ts)
 				// 	std::cout << "key_val: " << key_val << std::endl;
 				// }
 
-
+			  clock.start("find_keyval");
 				std::string key_val = mochi.getValue(new_keys_list[k]);
-				log << "key: " << new_keys_list[k] << ", value: " << key_val << std::endl;
+				std::vector<std::string> userKeys = mochi.listKeysWithPrefix(key_val);
 
+				log << "key: " << new_keys_list[k] << ", value: " << key_val << std::endl;
+			  clock.stop("find_keyval");
+
+			  	
+
+
+			  clock.start("papi-find");
 				std::vector<std::string> keysInDB;
 		  	  #ifdef PAPI_ENABLED
 
 				// Add Papi counters
 				{
-					std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_PAPI");
+					// clock.start("find_add_papi");
+					// std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_PAPI");
+					// clock.stop("find_add_papi");
+
+					std::vector<std::string> foundKeys = filterWithPrefix(key_val + ":ADD_PAPI", userKeys);
 
 					if (foundKeys.size() > 0)
 					{
@@ -616,8 +643,10 @@ inline int InsituWrap::timestepExecute(int ts)
 							}
 							else
 							{
+								clock.start("papi-add-putKeyValue");
 								log << ts << " ADDed" << foundVals[i] << std::endl;
 								mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
+								clock.stop("papi-add-putKeyValue");
 							}
 						}
 					}
@@ -628,7 +657,11 @@ inline int InsituWrap::timestepExecute(int ts)
 
 				// Remove Papi counters
 				{
-					std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":REMOVE_PAPI");
+					// clock.start("find_remove_papi");
+					// std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":REMOVE_PAPI");
+					// clock.stop("find_remove_papi");
+
+					std::vector<std::string> foundKeys = filterWithPrefix(key_val + ":REMOVE_PAPI", userKeys);
 
 					if (foundKeys.size() > 0)
 					{
@@ -652,7 +685,9 @@ inline int InsituWrap::timestepExecute(int ts)
 							else
 							{
 								log << ts << " Removed" << foundVals[i] << std::endl;
+								clock.start("papi-del-putKeyValue");
 								mochi.putKeyValue("num_papi_counters", std::to_string(papiEvent.getNumEvents()));
+								clock.stop("papi-del-putKeyValue");
 							}
 						}
 					}
@@ -668,15 +703,21 @@ inline int InsituWrap::timestepExecute(int ts)
 					mochi.putKeyValue(key, value);
 				}
 		  	  #endif //PAPI_ENABLED
+			  clock.stop("papi-find");
 
 
+			  clock.start("catalyst-find");
 			  #ifdef CATALYST_ENABLED
 				//catalyst_scripts
 				if (catalyst_on)
 				{
 					// Add Catalyst script
 					{
-						std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_CATALYST_SCRIPT");
+						// clock.start("find_add_catalyst");
+						// std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_CATALYST_SCRIPT");
+						// clock.stop("find_add_catalyst");
+
+						std::vector<std::string> foundKeys = filterWithPrefix(key_val + ":ADD_CATALYST_SCRIPT", userKeys);
 
 						if (foundKeys.size() > 0)
 						{
@@ -704,7 +745,12 @@ inline int InsituWrap::timestepExecute(int ts)
 
 					// Remove Catalyst script
 					{
-						std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":REMOVE_CATALYST_SCRIPT");
+						// clock.start("find_remove_catalyst");
+						// std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":REMOVE_CATALYST_SCRIPT");
+						// clock.stop("find_remove_catalyst");
+
+						std::vector<std::string> foundKeys = filterWithPrefix(key_val + ":REMOVE_CATALYST_SCRIPT", userKeys);
+
 
 						if (foundKeys.size() > 0)
 						{
@@ -736,8 +782,10 @@ inline int InsituWrap::timestepExecute(int ts)
 					cat.init(catalyst_scripts.size(), catalyst_scripts);
 				}
 		      #endif //CATALYST_ENABLED
+			  clock.stop("catalyst-find");
 
 				MPI_Barrier(MPI_COMM_WORLD);
+			  clock.start("erase-key");
 				if (myRank == 0)
 				{
 					for (int i=0; i<keysInDB.size(); i++)
@@ -745,6 +793,7 @@ inline int InsituWrap::timestepExecute(int ts)
 
 					mochi.eraseKey(new_keys_list[k]);
 				}
+			  clock.stop("erase-key");
 			}
 		}
 		else
@@ -757,10 +806,20 @@ inline int InsituWrap::timestepExecute(int ts)
 	currentTimestep++;
 
 	clock.stop("timestepExecute");
-	log << "InsituWrap timestepExecute papi took: " << clock.getDuration("papi") << " s" << std::endl;
-	log << "InsituWrap timestepExecute mochi took: " << clock.getDuration("mochi") << " s" << std::endl;
-	log << "InsituWrap timestepExecute polling took: " << clock.getDuration("mochi_polling") << " s" << std::endl;
-	log << "InsituWrap timestepExecute took: " << clock.getDuration("timestepExecute") << " s" << std::endl;
+	log << "InsituWrap timestepExecute papi took: " << clock.getDuration("papi") << " ms" << std::endl;
+	log << "InsituWrap timestepExecute mochi took: " << clock.getDuration("mochi") << " ms" << std::endl;
+	log << "InsituWrap timestepExecute polling took: " << clock.getDuration("catalyst-find") << " ms" << std::endl;
+	log << "  find_new_keys polling took: " << clock.getDuration("find_new_keys") << " ms" << std::endl;
+	log << "  find_keyval polling took: " << clock.getDuration("find_keyval") << " ms" << std::endl;
+	log << "  papi add polling took: " << clock.getDuration("papi-add-putKeyValue") << " ms" << std::endl;
+	log << "  papi del polling took: " << clock.getDuration("papi-del-putKeyValue") << " ms" << std::endl;
+	log << "  erase-key polling took: " << clock.getDuration("erase-key") << " ms" << std::endl;
+
+	log << "  papi-find polling took: " << clock.getDuration("papi-find") << " ms" << std::endl;
+	log << "  catalyst-find polling took: " << clock.getDuration("catalyst-find") << " ms" << std::endl;
+	
+
+	log << "InsituWrap timestepExecute took: " << clock.getDuration("timestepExecute") << " ms" << std::endl;
 
 	InWrap::writeLog(logName, log.str());
   

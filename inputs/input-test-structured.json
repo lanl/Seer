@@ -7,7 +7,7 @@
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo_test3",
+        "name": "foo_test6",
         "polling-rate" : 1
     },
 
@@ -20,6 +20,7 @@
         "PAPI_BR_UCN",
         "PAPI_VEC_SP"
     ],
+
 
     "catalyst": true,
     "catalyst-scripts": 

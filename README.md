@@ -83,7 +83,7 @@ spack load -r py-sdskv
 #### server:
 ~~~bash
 sdskv-server-daemon na+sm foo:ldb -f address &                # shared mem
-sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo2:ldb   # distributed mem
+sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test7:ldb &  # distributed mem
 ~~~
 
 #### client:
@@ -99,18 +99,18 @@ mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # di
 ~~~bash
 module load anaconda/Anaconda3 
 jupyter-notebook password                  # only needed first time
-jupyter-notebook --no-browser --port=8891 --ip=0.0.0.0
+jupyter-notebook --no-browser --port=8894 --ip=0.0.0.0
 ~~~
 
 * Local:  
 ssh -N -f -L port:host:hostport username@cluster e.g.
 ~~~bash
-ssh -N -f -L 8891:cn36:8891 pascalgrosset@darwin-fe
+ssh -N -f -L 8894:cn36:8894 pascalgrosset@darwin-fe
 ~~~
 
 In Browser:
 ~~~bash
-http://localhost:8898
+http://localhost:8893
 ~~~
 
 

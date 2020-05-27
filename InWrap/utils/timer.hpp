@@ -63,7 +63,7 @@ inline int Timer::stop(std::string timerName)
 	{
 		auto endTime = std::chrono::system_clock::now(); 
 		auto elapsed_time = endTime - timers[timerName];
-		auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed_time).count();
+		auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count();
 		timers_duration.insert( std::pair<std::string,std::chrono::duration<double>>(timerName, elapsed_seconds) );
 		   return 1;
 	}

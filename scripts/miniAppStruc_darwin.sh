@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -N 2
-#SBATCH --ntasks-per-node 4
+#SBATCH -N 1
+#SBATCH --ntasks-per-node 1
 #SBATCH -p galton
 
 export MPIP="-t 10.0"
