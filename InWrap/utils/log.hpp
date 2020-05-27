@@ -5,9 +5,9 @@
 #include <sstream>
 #include <iostream>
 
-
 namespace InWrap  
 { 
+
 
 class Log
 {
