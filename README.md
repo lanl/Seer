@@ -1,59 +1,61 @@
-# InWrap
-InWrap is a lightweight insitu wrapper library adding insitu capabilities to simulations.
+# Seer
+
+Seer is a lightweight insitu wrapper library adding insitu capabilities to simulations.
+
 
 ## Requirements:
- * CMake 3.10 or above
- * C++ 11
- * MPI 3
- * Mochi
+
+* CMake 3.10 or above
+* C++ 11
+* MPI 3
+* Mochi
+
 
 ### Optional Requirements:
- * [Sensei](https://github.com/Kitware/sensei)
- * [Catalyst](https://www.paraview.org/files/v5.5/Catalyst-v5.5.2-Base-Enable-Python-Essentials-Extras-Rendering-Base.tar.gz)
+
+* [Sensei](https://github.com/Kitware/sensei)
+* [Catalyst](https://www.paraview.org/files/v5.5/Catalyst-v5.5.2-Base-Enable-Python-Essentials-Extras-Rendering-Base.tar.gz)
 
 
 ## Env Setup
- *  This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed, modify (or create) packages.yaml to contain the following:
-	~~~bash
-	packages:
-        	libfabric:
-            	variants: fabrics=tcp,rxm
-	~~~
 
- * Setting up Mochi
-	~~~bash
-	spack create env inwrap
-	git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
-	spack repo add sds-repo
-	spack install margo
-	~~~~
+* This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed, modify (or create) packages.yaml to contain the following:
 
- * Others (sdskeyval, py-sdskv)
-	~~~bash
-	spack install sdskeyval+bdb+leveldb
-	spack install py-sdskv
-	spack install vtk (spack install vtk ^hdf5+hl+mpi to bypass error)
-	~~~
+~~~bash
+packages:
+    libfabric:
+        variants: fabrics=tcp,rxm
+~~~
 
- * On a PC, also do this:
-	~~~bash
-	spack install openmpi
-	spack install cmake
-	~~~
+* Setting up Mochi and VTK
+
+~~~bash
+git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
+spack repo add sds-repo
+spack install margo
+spack install sdskeyval+bdb+leveldb
+spack install py-sdskv
+spack install vtk (spack install vtk ^hdf5+hl+mpi to bypass error) # VTK
+~~~
+
+* On a PC, also do this:
+
+~~~bash
+spack install openmpi
+spack install cmake
+~~~
 
 
 ## Building
+
 The following environment needs to be activated as follows:
 
 ~~~bash
-spack env activate inwrap
 spack load -r margo
 spack load -r sdskeyval
 spack load paraview@5.7.0
 spack load /6uyrlxs #mesa
-~~~
 
-~~~bash
 cd src
 mkdir build
 cd build
@@ -62,11 +64,13 @@ ccmake ..
 
 
 ## Running
+
 There are two parts of running the insitu package, i) running the sim, and ii) running the client
 
+
 ### Env setup to run sim
+
 ~~~bash
-spack env activate inwrap
 spack load -r /ayohgie #margo
 spack load -r sdskeyval
 spack load paraview@5.7.0
@@ -74,19 +78,22 @@ spack load /6uyrlxs #mesa
 ~~~
 
 ### Env setup to run python client
+
 ~~~bash
-spack env activate inwrap
 spack load -r py-sdskv
 ~~~
 
 
-#### server:
+#### server
+
 ~~~bash
-sdskv-server-daemon na+sm foo:ldb -f address &                # shared mem
-sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test7:ldb &  # distributed mem
+sdskv-server-daemon na+sm foo:ldb -f address &                		# for shared mem
+sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test7:ldb &  # for distributed mem
 ~~~
 
-#### client:
+
+#### client
+
 ~~~bash
 demoApps/testMPI na+sm://9923/0 1 foo 10                                    # shared mem
 mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # distributed mem
@@ -95,7 +102,8 @@ mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # di
 
 #### Jupyter:
 
-* Remote:
+* Remote
+
 ~~~bash
 module load anaconda/Anaconda3 
 jupyter-notebook password                  # only needed first time

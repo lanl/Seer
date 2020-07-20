@@ -27,9 +27,25 @@ class InWrapMochi:
 		self.count = 0
 
 		self.addingKeys = False
+  
+		# Generate Hash
+  		ip_addr = self.getIP()
+		self.hash_val = self.generateHash(ip_addr)
 
 
+	def __getIP(self):
+		hostname = socket.gethostname()    
+		IPAddr = socket.gethostbyname(hostname)  
+		return str(IPAddr)
 
+
+	def __generateHash(self, value):
+		hash_object = hashlib.md5(value.encode())
+		temp_str = str(hash_object.hexdigest())
+		return ( temp_str[0:8] )
+
+
+	# Some Utility functions
 	def put_keyval(self, key, val):
 		self.db.put(key, val)
 
@@ -38,14 +54,14 @@ class InWrapMochi:
 		if (self.db.exists(key)):
 			self.db.erase(key)
 		else:
-			return "key does not exist"
+			return "key " + key +" does not exist!"
 
 
 	def get_val(self, key):
 		if (self.db.exists(key)):
 			return self.db.get(key)
 		else:
-			return "key does not exist"
+			return "key " + key +" does not exist!"
 
 
 	def exists(self, key):
@@ -59,44 +75,49 @@ class InWrapMochi:
 
 	def shutdown(self):
 		self.client.shutdown_service(self.addr)
+		
+  
+	
+	# User Operations
+	def list_keys(self):
+		"""List my keys and general ones"""
+		key,val = self.list_keyVal()
+  
+		my_keys = []
+		for k in key:
+			if k[8] == ':' and key.startswith(self.hash_val):	#my keys only
+				my_keys.append(key)
+			else:
+				my_keys.append(key)		# universal keys
+    
+		return my_keys
 
 
-
-	def getIP(self):
-		hostname = socket.gethostname()    
-		IPAddr = socket.gethostbyname(hostname)  
-		return str(IPAddr)
-
-
-	def generateHash(self, value):
-		hash_object = hashlib.md5(value.encode())
-		temp_str = str(hash_object.hexdigest())
-		return ( temp_str[0:8] )
-
-
-	# Transaction operations: Set and commit
+	def list_my_keys(self):
+		"""List my keys only"""
+		key,val = self.list_keyVal()
+  
+		my_keys = []
+		for k in key:
+			ikey.startswith(self.hash_val):	#my keys only
+				my_keys.append(key)
+    
+		return my_keys
+       
+ 
 	def set(self, key, value):
+		"""Adds a command"""
 		self.command_dic[key + "-" + str(self.count)] = value
 		self.count = self.count + 1
 
 
 	def commit(self):
-
-		ip_addr = self.getIP()
-		hash_val = self.generateHash(ip_addr)
-		new_key = "NEW_KEY_" + hash_val
+		"""Send commands to database"""
+		new_key = "NEW_KEY:" + self.hash_val
 
 		# Loop until you can add a new key
 		while ( self.db.exists(new_key) ): 
 			continue
-
-
-		# Generate a random number to pad keys with
-		#rand_num = random.randint(99999,1000000)
-		#while rand_num in self.used_unique_ids:
-		#	rand_num = random.randint(99999,1000000)
-
-		#self.used_unique_ids.append(rand_num)
 
 		# Format of keys:
 		# XXXXXX:Key-YYY
@@ -104,23 +125,22 @@ class InWrapMochi:
 		# Add keys to mochi DB
 		key_list = []
 		self.addingKeys = True
-		#self.db.put("NEW_KEY", "0")	# adding keys
+
 		for key,val in self.command_dic.items():
-			key_padded = hash_val + ":" + key	# add unique tag to each
-			#key_padded = key + ":" + str(rand_num)	# add unique tag to each
+			key_padded = self.hash_val + ":" + key	# add unique tag to each
+   
 			self.db.put(key_padded, val)			# put key in mochi db
 
-			key_list.append(key)	# save the key for later deletion
+			key_list.append(key)					# save the key for later deletion
 
 			print("key: ", key_padded)
 			print("val: ", val)
 
-		#self.db.put("NEW_KEY", str(rand_num))	# adding keys done
 		self.db.put(new_key, hash_val)	# adding keys done
 		self.addingKeys = False
 
 		# Delete keys
-		for k in key_list:
+		for k in key_list:				# delete keys that have been added to db
 			del self.command_dic[k]
 
 

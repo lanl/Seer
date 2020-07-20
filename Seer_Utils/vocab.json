@@ -1,0 +1,10 @@
+{
+	"keywords-desc" : "list of all allowed keywords",
+	"keywords" : [
+		"PAPI:ADD_COUNTER",
+		"PAPI:DEL_COUNTER",
+		"CATALYST:ADD_SCRIPT",
+		"CATALYST:DEL_SRIPT",
+		"SIM:GET_TIMER"
+	]
+}

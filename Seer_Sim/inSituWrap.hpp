@@ -5,13 +5,14 @@
 #include <string>
 #include <ctime>
 #include <sstream>
+#include <map>
 #include <vector>
 #include <fstream>
 #include <unordered_map>
 #include <algorithm>
-#include <mpi.h>
 #include <utility>
 
+#include <mpi.h>
 
 #include "utils/argsParser.hpp"
 #include "utils/json.hpp"
@@ -47,19 +48,74 @@ namespace InWrap
 {
 
 
+struct eventsUsers
+{
+	std::map< std::string, std::set<std::string>> eventHashes;
+
+	void insertEventHash(std::string event, std::string hash)
+	{
+		auto it = eventHashes.find(event);
+		if (it != eventHashes.end())
+		{
+			//std::cout << "Found " << event << " inserting: " << hash << ",set size: " << it->second.size() << std::endl; 
+			it->second.insert(hash);
+		}
+		else
+		{
+			//std::cout << "Not found " << event << std::endl;
+			std::set< std::string> s;
+    		s.insert(hash);
+			eventHashes.insert( { event, s } );
+		} 
+	}
+
+	void removeEventHash(std::string event, std::string hash)
+	{
+		auto it = eventHashes.find(event);
+		if (it == eventHashes.end())
+		{
+			// Nothing to remove here: must be an error
+			std::cout << "That key " << event << " does not exist!" << std::endl;
+		}
+		else
+		{
+			it->second.erase(hash);
+			if (it->second.size() == 0)	// if removing hash makes set empty
+				eventHashes.erase(it);
+		}
+	}
+
+	
+	std::vector<std::string> getHashes(std::string event)
+	{
+		std::vector<std::string> temp;
+		temp.resize(0);
+		
+		auto it = eventHashes.find(event);
+		if (it != eventHashes.end())
+			std::copy(it->second.begin(), it->second.end(), std::back_inserter(temp));
+
+		return temp;
+	}
+
+	void print()
+	{
+		for (auto mIt=eventHashes.begin(); mIt!=eventHashes.end(); mIt++)
+		{
+			std::cout << mIt->first << std::endl;
+			for (auto sIt=mIt->second.begin(); sIt!=mIt->second.end(); sIt++)
+				std::cout << *sIt << " ";
+			std::cout << std::endl;
+		}
+	}
+};
+
+
+
 class InsituWrap
 {
 	bool insitu_on;
 	nlohmann::json jsonInput;	// json
-
-	int numRanks;
-	int myRank;
-	int numTimesteps;
-
-	int currentTimestep;
-
-	std::stringstream log;		// logging
-	std::string logName;
 
 
 	// Mochi
@@ -70,6 +126,7 @@ class InsituWrap
 
 	int currentPollingCount;
 	int pollIteration;
+
   #ifdef MOCHI_ENABLED
 	MochiInterface mochi;
   #endif
@@ -83,29 +140,47 @@ class InsituWrap
 	PAPIWrapper papiEvent;
   #endif
 
+	bool mpi_profiling_on;		// Enable MPI Profiling
+
+	
 	// Catalyst
 	bool catalyst_on;	// Enable Catalyst
 	std::vector<std::string> catalyst_scripts;
 
 
-	bool tau_on;				// Enable TAU
-	bool mpi_profiling_on;		// Enable MPI Profiling
-
+	// Sensei
 	std::string sensei_path;
 	bool sensei_on;		// Enable Sensei
 	bool veloc_on;		// Enable VeloC
 
 
-	// vtk
+	// Others
+	int numRanks;
+	int myRank;
+
+	int numTimesteps;
+	int currentTimestep;
+
+	std::stringstream log;
+	std::string logName;
+
+
+	// vtk data
 	VTKDataStruct *genericVTK;
 
 	// Events to record in sim
 	std::vector<std::string> events;	// non-papi event 
 
+	// events and users
+	eventsUsers eventHash;
+
+
   public:
+	// Temporary
   	#ifdef CATALYST_ENABLED
 		CatalystAdaptor cat;
   	#endif
+
 
   public:
   	InsituWrap();
@@ -137,17 +212,16 @@ inline InsituWrap::InsituWrap()
 {
 	insitu_on = false;
 
-	tau_on = false;
+	// Profiling
 	papi_on = false;
-
 	mpi_profiling_on = false;
 
+	// InSitu toolkits
 	sensei_on = false;
 	catalyst_on = false;
 	veloc_on = false;
 
-	logName = "logs/";
-
+	// Mochi
 	mochi_on = false;
 	mochi_database = "";
 	mochi_address = "";
@@ -155,11 +229,14 @@ inline InsituWrap::InsituWrap()
 	currentPollingCount = 0;
 	pollIteration = 1; // poll mochi server at every timestep 
 
+	// Others
 	myRank = 0;
 	numRanks = 0;
-	numTimesteps= 0;
 
 	currentTimestep = 0;
+	numTimesteps= 0;
+
+	logName = "logs/";
 }
 
 
@@ -218,9 +295,9 @@ inline std::vector<std::string> InsituWrap::filterWithPrefix(std::string prefix,
 inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 {
 	Timer clock;
-	clock.start("init");
+  clock.start("init");
 
-	clock.start("initialization");
+  clock.start("initialization");
 
 	//
 	// initialize insitu
@@ -245,7 +322,8 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		}
 	}
 
-
+	//
+	// Quit if there is no config file!
 	if (!foundInsituConfig)
 	{
 		if (myRank == 0)
@@ -253,7 +331,6 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 
 		return 0;
 	}
-
 
 
 	//
@@ -286,12 +363,8 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 	}
 
 
-
-	
-
-
 	//
-	// Read in input
+	// Read in input config JSON file
 	std::ifstream jsonFile(insituConfigFile);
 	jsonFile >> jsonInput;
 
@@ -319,8 +392,6 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 
 	
 
-
-
 	//
 	// Process JSON input file
 	if ( jsonInput.find("sensei") != jsonInput.end() )
@@ -330,6 +401,7 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 	}
 
 
+	// Record all events. Not needed anymore!!!
 	if ( jsonInput.find("events-to-record") != jsonInput.end() )
 		for (int i=0; i<jsonInput["events-to-record"].size(); i++)
 		{
@@ -337,11 +409,13 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 			log << "event: " << jsonInput["events-to-record"][i] << std::endl;
 		}
 
-	clock.stop("initialization");
+  clock.stop("initialization");
+
 
 
 	// Papi
-	clock.start("papi");
+  clock.start("papi");
+  
   #ifdef PAPI_ENABLED
 	if ( jsonInput.find("papi") != jsonInput.end() )
 	{
@@ -361,11 +435,14 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		}
 	} 
   #endif  
-	clock.stop("papi");
+
+  clock.stop("papi");
+
 
 
 	// Mochi
-	clock.start("mochi");
+  clock.start("mochi");
+
   #if MOCHI_ENABLED
 	if ( jsonInput.find("mochi") != jsonInput.end() )
 	{
@@ -429,11 +506,14 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		}
 	}
   #endif
-	clock.stop("mochi");
+
+  clock.stop("mochi");
+
 
 
 	// Catalyst
-	clock.start("catalyst");
+  clock.start("catalyst");
+
   #ifdef CATALYST_ENABLED
 	if ( jsonInput.find("catalyst") != jsonInput.end() )
 	{
@@ -441,12 +521,8 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 		std::cout << "catalyst on" << std::endl;
 
 		for (int i=0; i<jsonInput["catalyst-scripts"].size(); i++)
-		{
 			if ( isPythonFile( jsonInput["catalyst-scripts"][i] ))
-			{
 				catalyst_scripts.push_back( jsonInput["catalyst-scripts"][i] );
-			}
-		}
 
 		if (catalyst_on)
 		{
@@ -454,12 +530,12 @@ inline int InsituWrap::init(int argc, char* argv[], int _myRank, int _numRanks)
 			std::cout << "catalyst initiated" << std::endl;
 		}
 		else
-		{
 			std::cout << "catalyst NOT ON!!!" << std::endl;
-		}
 	}
   #endif
-	clock.stop("catalyst");
+
+  clock.stop("catalyst");
+
 
 
 	// MPI
@@ -585,53 +661,42 @@ inline int InsituWrap::timestepExecute(int ts)
 		{
 			currentPollingCount = 0; // poll mochi server at every timestep 
 
-			clock.start("find_new_keys");
+		  clock.start("find_new_keys");
+		  	// Find the processes who sent requests; new_keys_list constiains hashes
 			std::vector<std::string> new_keys_list = mochi.listKeysWithPrefix("NEW_KEY");
-			clock.stop("find_new_keys");
+		  clock.stop("find_new_keys");
 
-			//if ( mochi.existsKey("NEW_KEY") )
+			// Process keys
 			for (int k=0; k<new_keys_list.size(); k++)
 			{
-				// // Loop until we are ready
-				// std::string key_val = mochi.getValue("NEW_KEY");
-				// while (key_val == "0")
-				// {
-				// 	key_val = mochi.getValue("NEW_KEY");
-				// 	std::cout << "key_val: " << key_val << std::endl;
-				// }
-
 			  clock.start("find_keyval");
-				std::string key_val = mochi.getValue(new_keys_list[k]);
-				std::vector<std::string> userKeys = mochi.listKeysWithPrefix(key_val);
+				std::string key_val = mochi.getValue(new_keys_list[k]);					// get hash from value and store in key_val
+				std::vector<std::string> userKeys = mochi.listKeysWithPrefix(key_val);  // list keys starting with hash
 
 				log << "key: " << new_keys_list[k] << ", value: " << key_val << std::endl;
 			  clock.stop("find_keyval");
 
-			  	
-
 
 			  clock.start("papi-find");
 				std::vector<std::string> keysInDB;
+
 		  	  #ifdef PAPI_ENABLED
-
-				// Add Papi counters
+				// Add PAPI counters
 				{
-					// clock.start("find_add_papi");
-					// std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":ADD_PAPI");
-					// clock.stop("find_add_papi");
-
+					// Find keys that start with the HASH:ADD_PAPI
 					std::vector<std::string> foundKeys = filterWithPrefix(key_val + ":ADD_PAPI", userKeys);
 
 					if (foundKeys.size() > 0)
 					{
-						log << ts << " ADD_PAPI  found " << foundKeys.size() << std::endl;
+						log << ts << " ADD_PAPI found " << foundKeys.size() << std::endl;
 
 						std::vector<std::string> foundVals;
 						for (int i=0; i<foundKeys.size(); i++)
 						{
-							log << ts << " ADD foundKeys[i]" << foundKeys[i] << std::endl;
+							log << ts << " ADD foundKeys["<<i<<"] " << foundKeys[i] << std::endl;
+
 							foundVals.push_back( mochi.getValue(foundKeys[i]) );
-							keysInDB.push_back(foundKeys[i]);
+							keysInDB.push_back( foundKeys[i] );
 						}
 
 
@@ -655,12 +720,8 @@ inline int InsituWrap::timestepExecute(int ts)
 				}
 
 
-				// Remove Papi counters
+				// Remove PAPI Counters
 				{
-					// clock.start("find_remove_papi");
-					// std::vector<std::string> foundKeys = mochi.listKeysWithPrefix(key_val + ":REMOVE_PAPI");
-					// clock.stop("find_remove_papi");
-
 					std::vector<std::string> foundKeys = filterWithPrefix(key_val + ":REMOVE_PAPI", userKeys);
 
 					if (foundKeys.size() > 0)
