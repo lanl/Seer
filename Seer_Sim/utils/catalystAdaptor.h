@@ -2,14 +2,16 @@
 
 #ifdef CATALYST_ENABLED
 
-#include <vtkSmartPointer.h>
+
 #include <vtkNew.h>
+#include <vtkSmartPointer.h>
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 #include <vtkCPProcessor.h>
 #include <vtkCPPythonScriptPipeline.h>
 #include <vtkMPI.h>
 #include <vtkDataObject.h>
+
 
 #include "unstructuredGrid.h"
 #include "structuredGrid.h"
@@ -26,7 +28,7 @@
 #include <sstream>
 
 
-namespace InWrap
+namespace Seer
 {
 
 
@@ -354,6 +356,6 @@ inline void CatalystAdaptor::coProcess(vtkRectilinearGrid  *recGrid, double time
 	log << "CatalystAdaptor coProcess: " << clock.getDuration("coProcess") << " s" << std::endl;
 }
 
-} // inwrap
+} // namespace seer
 
 #endif

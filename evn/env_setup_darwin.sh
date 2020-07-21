@@ -2,7 +2,6 @@ module purge
 module load openmpi/3.1.0-gcc_7.3.0
 module load papi/5.6.1
 
-spack env activate scidac
 spack load -r margo
 spack load -r sdskeyval
 spack load -r py-sdskv
@@ -10,3 +9,9 @@ spack load vtk
 spack load cmake
 spack load /wnmdss5	# paraview@5.7.0
 spack load /pse7k4b # osmesa
+
+export LD_LIBRARY_PATH=/home/pascalgrosset/spack/opt/spack/linux-centos7-ivybridge/gcc-7.3.0/paraview-5.7.0-wnmdss5zmahq2pt53aai5gcu2kswkxif/lib64:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/projects/opt/centos7/papi/5.6.1/lib/:$LD_LIBRARY_PATH
+
+echo "PAPI inc /projects/opt/centos7/papi/5.6.1/include"
+echo "PAPI lib /projects/opt/centos7/papi/5.6.1/lib/libpapi.so"

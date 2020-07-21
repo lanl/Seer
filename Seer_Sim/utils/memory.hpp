@@ -18,7 +18,7 @@
 #include <iostream>
 
 
-namespace InWrap  
+namespace Seer  
 { 
 
 
@@ -247,4 +247,4 @@ inline void Memory::GetMemorySize(unsigned long &size, unsigned long &rss)
 	size = (size_t) info.virtual_size;
 }
 
-}
+} // Namespace Seer

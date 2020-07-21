@@ -24,7 +24,7 @@
 
 
 
-namespace InWrap
+namespace Seer
 {
 
 class StructuredGrid: public VTKDataStruct

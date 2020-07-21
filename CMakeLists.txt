@@ -31,6 +31,7 @@ set (BUILD_SHARED_LIBS "OFF" CACHE BOOL "Build a shared library")
 # Catalyst
 option(ENABLE_CATALYST "Link the sim with Catalyst for in situ" OFF)
 if (ENABLE_CATALYST)
+message("ENABLE_CATALYST")
   	find_package(ParaView REQUIRED)
 
   	if (NOT TARGET ParaView::PythonCatalyst)
@@ -54,9 +55,12 @@ if (ENABLE_CATALYST)
   	message(STATUS "IO with Paraview Catalyst enabled" )
 
 
-  	list( APPEND INWRAP_LIBS ParaView::PythonCatalyst VTK::CommonDataModel VTK::ParallelMPI VTK::IOParallelXML)
+  	list( APPEND SEER_LIBS ParaView::PythonCatalyst VTK::CommonDataModel VTK::ParallelMPI VTK::IOParallelXML)
 
 	add_definitions(-DCATALYST_ENABLED)
+	message("ENABLE_CATALYST!!!")
+
+	
 endif()
 
 
@@ -92,7 +96,6 @@ if (USE_PAPI)
 	set (PAPI_INCLUDE_PATH ${PAPI_INCLUDE_PATH} CACHE PATH "Papi include directory")
   	set (PAPI_LIBRARY ${PAPI_LIBRARY} CACHE PATH "Papi library")
   	include_directories(${PAPI_INCLUDE_PATH})
-    message(${PAPI_INCLUDE_PATH})
   	add_definitions(-DPAPI_ENABLED)
 endif()
 
@@ -105,7 +108,7 @@ find_package(PkgConfig REQUIRED)
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-			"${CMAKE_CURRENT_SOURCE_DIR}/InWrap/cmake")
+			"${CMAKE_CURRENT_SOURCE_DIR}/Seer_Sim/cmake")
 
 # packages we depend on
 include (xpkg-import)
@@ -132,12 +135,12 @@ else()
 endif()
 
 # OpenMP
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
+# find_package(OpenMP)
+# if (OPENMP_FOUND)
+#     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+#     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+# endif()
 
 
 

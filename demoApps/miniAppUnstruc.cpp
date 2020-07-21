@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	if (SenseiOn)
 	{
 		std::cout << "Sensei on" << std::endl;
-		InWrap::senseiInitialize(MPI_COMM_WORLD, argv[2]);
+		Seer::senseiInitialize(MPI_COMM_WORLD, argv[2]);
 	}
 
   #endif
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 
 
 
-		InWrap::UnstructuredGrid temp;
+		Seer::UnstructuredGrid temp;
 		temp.setPoints(&points[0], numPoints, VTK_VERTEX);
 		temp.addScalarData("pressure", numPoints, data);
 		
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 
 		if (SenseiOn)
 		{
-			InWrap::senseiAnalyze("mesh", temp.getGrid(), t, t/1.0);
+			Seer::senseiAnalyze("mesh", temp.getGrid(), t, t/1.0);
 		}
 		else
 			temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 
   #ifdef SENSEI_ENABLED
 	if (SenseiOn)
-		InWrap::senseiFinalize();
+		Seer::senseiFinalize();
   #endif
 
 	MPI_Finalize();

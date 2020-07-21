@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iostream>
 
-namespace InWrap  
+namespace Seer  
 { 
 
 
@@ -67,4 +67,4 @@ inline void writeLogNew(std::string filename, std::string log)
 	outputFile.close();
 }
 
-}
+} // namespace Seer

@@ -23,7 +23,7 @@
 #include <vtkDataObject.h>
 
 
-namespace InWrap
+namespace Seer
 {
 
 class PolyData: public VTKDataStruct

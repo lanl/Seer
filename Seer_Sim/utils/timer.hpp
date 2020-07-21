@@ -13,7 +13,7 @@ Authors:
 #include <sstream>
 #include <map>
 
-namespace InWrap  
+namespace Seer  
 { 
 
 class Timer
@@ -117,4 +117,4 @@ inline std::string Timer::getCurrentTime()
 	return ss.str();
 }
 
-} //InWrap
+} //Namespace Seer

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 
-namespace InWrap  
+namespace Seer  
 { 
 
 #ifdef PAPI_ENABLED
@@ -287,4 +287,4 @@ inline int PAPIWrapper::stopReading()
 
 #endif
 
-}
+} // Namespace Seer

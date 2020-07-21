@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	int processor_name_len;
 	MPI_Get_processor_name(processor_name, &processor_name_len);
 
-	InWrap::Timer clock;
+	Seer::Timer clock;
 
 	if (myRank == 0)
 		std::cout << numTimesteps << std::endl;
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 			tempVector[2] = myRank+0.4;
 
 
-			InWrap::StructuredGrid temp;
+			Seer::StructuredGrid temp;
 
 
 			temp.setWholeExtents(0,numRanks, 0,dimY-1, 0,dimZ-1);
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 	
 			//temp.writeParts(numRanks, myRank, myRank, "testStructuredMPI_" + std::to_string(t));
 
-			InWrap::writeLog( "myLog_" + std::to_string(myRank), msgLog.str());
+			Seer::writeLog( "myLog_" + std::to_string(myRank), msgLog.str());
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000));

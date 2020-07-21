@@ -6,6 +6,7 @@
 #include <ctime>
 #include <sstream>
 #include <map>
+#include <set>
 #include <vector>
 #include <fstream>
 #include <unordered_map>
@@ -30,6 +31,7 @@
 #ifdef CATALYST_ENABLED	
 	#include "utils/catalystAdaptor.h"
 #endif
+
 
 // VTK Helpers+++
 #include "vtkStructures/structuredGrid.h"
@@ -182,6 +184,9 @@ class SeerInsituWrap
 
 	void createVTKStruct(std::string strucName);
 	void print();
+
+
+	void readFromMochi();
 
 
   public:
@@ -380,7 +385,7 @@ int SeerInsituWrap::initInSitu(int _myRank, int _numRanks)
 	if ( jsonInputConfig.contains("polling-rate") )
 	{
 		std::string poll_iteration = jsonInputConfig["polling-rate"];
-		pollIteration = InWrap::to_int(poll_iteration);
+		pollIteration = Seer::to_int(poll_iteration);
 	}
 	else
 		pollIteration = 1;
@@ -666,7 +671,7 @@ inline int SeerInsituWrap::timestepExecute(int ts)
     			std::string value = std::to_string( papiEvent.getHwdValue(e) );
 
 				// Append user hash before putting in mochi
-				std::vector< std::string > userHashes = eventHash.getHashes();
+				std::vector< std::string > userHashes = eventHash.getHashes(key);
 				for (auto uh=userHashes.begin(); uh!=userHashes.end(); uh++)
 					mochi.putKeyValue(*uh + "@" + key, value);
 				
@@ -787,12 +792,12 @@ void SeerInsituWrap::readFromMochi()
 					else
 					{
 						eventHash.insertEventHash( foundKeyVals[i].second, key_hash );
-						log << ts << " PAPI:Adding event" << foundKeyVals[i].second << std::endl;
+						log  << " PAPI:Adding event" << foundKeyVals[i].second << std::endl;
 					}
 						
 				}
 				
-				log << ts << " done adding new papi keys!" << std::endl;
+				log << " done adding new papi keys!" << std::endl;
 			}
 
 			// Remove PAPI Counters
@@ -809,7 +814,7 @@ void SeerInsituWrap::readFromMochi()
 					else
 					{
 						eventHash.insertEventHash( foundKeyVals[i].second, key_hash );
-						log << ts << " PAPI:Removed" << foundKeyVals[i].second << std::endl;
+						log << " PAPI:Removed" << foundKeyVals[i].second << std::endl;
 					}
 				}
 
@@ -832,10 +837,10 @@ void SeerInsituWrap::readFromMochi()
 					processedKeys.push_back( foundKeyVals[i].first );
 
 					catalyst_scripts.push_back(foundKeyVals[i].second);	// Add script
-					log << ts << " Catalyst: ADDed " << foundKeyVals[i].first << ", " << foundKeyVals[i].second << std::endl;
+					log << " Catalyst: ADDed " << foundKeyVals[i].first << ", " << foundKeyVals[i].second << std::endl;
 				}	
 
-				log << ts << " done adding new catalyst scripts" << std::endl;
+				log << " done adding new catalyst scripts" << std::endl;
 			}
 
 			// Remove Catalyst script
@@ -845,11 +850,19 @@ void SeerInsituWrap::readFromMochi()
 				{
 					processedKeys.push_back( foundKeyVals[i].first );
 
-					catalyst_scripts.erase(foundKeyVals[i].second);	// Add script
-					log << ts << " Catalyst: Removed " << foundKeyVals[i].first << ", " << foundKeyVals[i].second << std::endl;
+
+					// Remove script
+					for (int j=0; j<catalyst_scripts.size(); j++)
+						if (catalyst_scripts[j] == std::string(foundKeyVals[i].second))
+						{
+							catalyst_scripts.erase(catalyst_scripts.begin()+j);
+							break;
+						}
+
+					log << " Catalyst: Removed " << foundKeyVals[i].first << ", " << foundKeyVals[i].second << std::endl;
 				}	
 
-				log << ts << " done removing catalyst scripts" << std::endl;
+				log << " done removing catalyst scripts" << std::endl;
 			}
 
 			// Re-initialize catalyst
@@ -920,9 +933,3 @@ void SeerInsituWrap::readFromMochi()
 
 
 } //Namespace Seer
-
-
-
-
-
-#endif

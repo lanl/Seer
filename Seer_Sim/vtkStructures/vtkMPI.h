@@ -9,7 +9,7 @@
 #include <vtkMPIController.h>
 
 
-namespace InWrap
+namespace Seer
 {
 
 class VTKMpi

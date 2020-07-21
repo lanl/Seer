@@ -22,7 +22,7 @@
 
 
 
-namespace InWrap
+namespace Seer
 {
 
 class UnstructuredGrid: public VTKDataStruct

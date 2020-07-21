@@ -19,7 +19,7 @@
 
 
 
-namespace InWrap
+namespace Seer
 {
 
 class RectilinearGrid: public VTKDataStruct

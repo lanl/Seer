@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-namespace InWrap  
+namespace Seer  
 { 
 	template <typename T> 
 	inline T to_val(std::string value)

@@ -5,7 +5,7 @@
 #include <vtkDataSet.h>
 
 
-namespace InWrap
+namespace Seer
 {
 
 

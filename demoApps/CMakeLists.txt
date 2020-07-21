@@ -1,15 +1,15 @@
 # Catalyst
-if (CATALYST_ENABLED)
-	message("CATALYST_ENABLED")
+if (ENABLE_CATALYST)
+	message("CATALYST_ENABLED demo")
 	add_executable(miniAppUnstruc miniAppUnstruc.cpp)
 	add_executable(miniAppStructured miniAppStructured.cpp)
 
-	target_link_libraries(miniAppStructured ${MPI_LIBRARIES} ${SEER_LIBS} papi vtkPVPythonCatalyst vtkParallelMPI margo sdskv-client)
-	target_link_libraries(miniAppUnstruc ${MPI_LIBRARIES} ${SEER_LIBS} papi vtkPVPythonCatalyst vtkParallelMPI margo sdskv-client)
+	target_link_libraries(miniAppStructured ${MPI_LIBRARIES} ${SEER_LIBS} papi vtkPVPythonCatalyst-pv5.7 vtkParallelMPI-pv5.7 margo sdskv-client)
+	target_link_libraries(miniAppUnstruc ${MPI_LIBRARIES} ${SEER_LIBS} papi vtkPVPythonCatalyst-pv5.7 vtkParallelMPI-pv5.7 margo sdskv-client)
 	
 
-	include(vtkModuleMacros)
-  	include(vtkMPI)
+	#include(vtkModuleMacros)
+  	#include(vtkMPI)
   
 elseif (SENSEI_ENABLED)
 	message("SENSEI_ENABLED")
@@ -17,10 +17,11 @@ elseif (SENSEI_ENABLED)
 	target_link_libraries(miniAppStructured ${MPI_LIBRARIES} ${SEER_LIBS} papi margo sdskv-client sensei senseiCore)
 	target_link_libraries(miniAppUnstruc ${MPI_LIBRARIES} ${SEER_LIBS} papi margo sdskv-client sensei senseiCore)
 
-	include(vtkModuleMacros)
-  	include(vtkMPI)
+	#include(vtkModuleMacros)
+  	#include(vtkMPI)
 
 else()
+message("NOTHING_ENABLED demoapps")
 	add_executable(miniAppUnstruc miniAppUnstruc.cpp)
 	add_executable(miniAppStructured miniAppStructured.cpp)
 

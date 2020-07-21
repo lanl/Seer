@@ -16,7 +16,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkStructuredGrid.h>
 
-namespace InWrap  
+namespace Seer  
 { 
 
 static vtkSmartPointer<sensei::VTKDataAdaptor> dataAdaptor;
@@ -61,6 +61,6 @@ inline void senseiFinalize()
 }
 
 
-}
+} // Namespace Seer
 
 #endif // SENSEI_ENABLE

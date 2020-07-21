@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-namespace InWrap  
+namespace Seer  
 { 
 
 std::vector <std::string> arguments;

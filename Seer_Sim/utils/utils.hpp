@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace InWrap  
+namespace Seer  
 { 
 
 inline bool fileExisits(std::string filename) 
@@ -15,4 +15,4 @@ inline bool fileExisits(std::string filename)
     return ifs.good();
 }
 
-} // InWrap
+} // Namespcase Seer
