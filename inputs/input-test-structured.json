@@ -30,5 +30,6 @@
     "events-to-record": [
         "loop-time",
         "comp-time"
-    ]
+    ],
+    "vocab" : "/projects/insituperf/Seer/Seer_Utils/vocab.json"
 }

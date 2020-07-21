@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random 
 
-class InWrapMochi:
+
+
+class SeerClient:
 
 	def __init__(self, transport, address, p_id, db_n):
 		self.engine = Engine(transport)
@@ -31,6 +33,9 @@ class InWrapMochi:
 		# Generate Hash
   		ip_addr = self.getIP()
 		self.hash_val = self.generateHash(ip_addr)
+  
+		# excluded keys
+		self.removed_keys = []
 
 
 	def __getIP(self):
@@ -85,49 +90,56 @@ class InWrapMochi:
   
 		my_keys = []
 		for k in key:
-			if k[8] == ':' and key.startswith(self.hash_val):	#my keys only
-				my_keys.append(key)
-			else:
-				my_keys.append(key)		# universal keys
+			if k[8] == ':' and key.startswith(self.hash_val) || key.startswith("00000000"):	
+				if key not in self.removed_keys:
+					my_keys.append(key)
     
 		return my_keys
 
 
-	def list_my_keys(self):
+	def list_my_keys_only(self):
 		"""List my keys only"""
 		key,val = self.list_keyVal()
   
 		my_keys = []
 		for k in key:
-			ikey.startswith(self.hash_val):	#my keys only
-				my_keys.append(key)
+			if key.startswith(self.hash_val):	#my keys only
+				if key not in self.removed_keys:
+					my_keys.append(key)
     
 		return my_keys
        
  
 	def set(self, key, value):
 		"""Adds a command"""
-		self.command_dic[key + "-" + str(self.count)] = value
+  
+		# Format of keys:
+		#  NEW_KEY@HASH
+		#  HASH@Type:Command%count
+  
+		self.command_dic[key + "%" + str(self.count)] = value
 		self.count = self.count + 1
+  
+		# Append to the list of removed keys
+		if key == "DEL":
+			self.removed_keys.append(value)
 
 
 	def commit(self):
 		"""Send commands to database"""
-		new_key = "NEW_KEY:" + self.hash_val
+		new_key = "NEW_KEY@" + self.hash_val
 
 		# Loop until you can add a new key
 		while ( self.db.exists(new_key) ): 
 			continue
 
-		# Format of keys:
-		# XXXXXX:Key-YYY
 
 		# Add keys to mochi DB
 		key_list = []
 		self.addingKeys = True
 
 		for key,val in self.command_dic.items():
-			key_padded = self.hash_val + ":" + key	# add unique tag to each
+			key_padded = self.hash_val + "@" + key	# add unique tag to each
    
 			self.db.put(key_padded, val)			# put key in mochi db
 

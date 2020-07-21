@@ -11,7 +11,7 @@ Seer is a lightweight insitu wrapper library adding insitu capabilities to simul
 * Mochi
 
 
-### Optional Requirements:
+### Optional Requirements
 
 * [Sensei](https://github.com/Kitware/sensei)
 * [Catalyst](https://www.paraview.org/files/v5.5/Catalyst-v5.5.2-Base-Enable-Python-Essentials-Extras-Rendering-Base.tar.gz)
@@ -35,15 +35,12 @@ spack repo add sds-repo
 spack install margo
 spack install sdskeyval+bdb+leveldb
 spack install py-sdskv
+spack install openmpi
+spack install cmake
 spack install vtk (spack install vtk ^hdf5+hl+mpi to bypass error) # VTK
 ~~~
 
-* On a PC, also do this:
-
-~~~bash
-spack install openmpi
-spack install cmake
-~~~
+If linking to catalyst, ParaView needs to be installed as well
 
 
 ## Building
@@ -53,8 +50,9 @@ The following environment needs to be activated as follows:
 ~~~bash
 spack load -r margo
 spack load -r sdskeyval
+
 spack load paraview@5.7.0
-spack load /6uyrlxs #mesa
+spack load /6uyrlxs #mesa needed for ParaView without X
 
 cd src
 mkdir build
@@ -73,8 +71,9 @@ There are two parts of running the insitu package, i) running the sim, and ii) r
 ~~~bash
 spack load -r /ayohgie #margo
 spack load -r sdskeyval
+
 spack load paraview@5.7.0
-spack load /6uyrlxs #mesa
+spack load /6uyrlxs #mesa needed for ParaView
 ~~~
 
 ### Env setup to run python client
@@ -100,7 +99,7 @@ mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # di
 ~~~
 
 
-#### Jupyter:
+#### Jupyter
 
 * Remote
 
@@ -110,30 +109,33 @@ jupyter-notebook password                  # only needed first time
 jupyter-notebook --no-browser --port=8894 --ip=0.0.0.0
 ~~~
 
-* Local:  
+* Local
+
 ssh -N -f -L port:host:hostport username@cluster e.g.
+
 ~~~bash
 ssh -N -f -L 8894:cn36:8894 pascalgrosset@darwin-fe
 ~~~
 
-In Browser:
+In Browser
+
 ~~~bash
-http://localhost:8893
+http://localhost:8894
 ~~~
 
 
 ## Adding runtime options using Mochi
+
 Using Mochi, we can pass information to the sim while it is running. Keywords are as follows:
- * Key: ADD_PAPI_COUNTER, 	 Value: <PAPI_COUNTER_NAME> 	- add a new PAPI Counter
- * Key: REMOVE_PAPI_COUNTER, Value: <PAPI_COUNTER_NAME> 	- remove an existing PAPI counter
- * Key: NEW_<ENTRY_TYPE>,	 Value: <Entry_Name>
- * Key: NEW_ENTRIES,		 Value: 
+
+* Key: PAPI_ADD, Value: <PAPI_COUNTER_NAME> - add a new PAPI Counter
+* Key: PAPI_DEL, Value: <PAPI_COUNTER_NAME> - remove an existing PAPI counter
 
 
 ## No papi counters found
- * Check if papi events are around using: papi_avail | more
- * Turn them on (if disabled) using: sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'
 
+* Check if papi events are around using: papi_avail | more
+* Turn them on (if disabled) using: sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'
 
 
 # Copyright

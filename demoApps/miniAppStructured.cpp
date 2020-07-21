@@ -12,11 +12,8 @@
 #include <mpi.h>
 
 #include "timer.hpp"
+#include "seerInSituWrap.hpp"
 
-
-#ifdef INSITU_ON
-  #include "inSituWrap.hpp"
-#endif
 
 
 int fib(int n) 
@@ -42,10 +39,10 @@ int main(int argc, char *argv[])
 	srand(time(NULL) + myRank);
 
 
-  #ifdef INSITU_ON
-	InWrap::InsituWrap insitu;
+
+	Seer::SeerInsituWrap insitu;
 	insitu.init(argc, argv, myRank, numRanks);
-  #endif
+
 
 
 	char processor_name[256];
@@ -139,7 +136,6 @@ int main(int argc, char *argv[])
 
 		MPI_Barrier(MPI_COMM_WORLD);
 
-	  #ifdef INSITU_ON
 		if (insitu.isInsituOn())
 		{
 			float tempVector[3];
@@ -177,16 +173,11 @@ int main(int argc, char *argv[])
 		  #endif //CATALYST_ENABLED
 
 			insitu.timestepExecute(t);
-
-			//insitu.recordEvent( "comp-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( clock.getDuration("factComputation") ) );
-			//insitu.recordEvent( "loop-time_ts_" + std::to_string(t) + "_" + std::to_string(myRank), std::to_string( clock.getDuration("mainLoop") ) );
-
 	
 			//temp.writeParts(numRanks, myRank, myRank, "testStructuredMPI_" + std::to_string(t));
 
 			InWrap::writeLog( "myLog_" + std::to_string(myRank), msgLog.str());
 		}
-	  #endif
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 		MPI_Barrier(MPI_COMM_WORLD);

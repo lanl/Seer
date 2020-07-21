@@ -13,10 +13,8 @@
 
 #include "timer.hpp"
 
-namespace InWrap  
+namespace Seer  
 { 
-
-#ifdef MOCHI_ENABLED
 
 #include <margo.h>
 #include "sdskv-client.h"
@@ -334,5 +332,4 @@ inline int MochiInterface::getValue(std::string key, std::string &value)
 }
 
 
-#endif
-}
+} // Namespace Seer

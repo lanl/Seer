@@ -25,5 +25,7 @@
 		"PAPI_L1_DCM", 
 		"PAPI_L1_ICM", 
 		"PAPI_L1_LDM" 
-	]
+	],
+
+	"vocab" : "/projects/insituperf/Seer/Seer_Utils/vocab.json"
 }

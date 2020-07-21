@@ -32,5 +32,6 @@
     [
         "loop-time",
         "comp-time"
-    ]
+    ],
+    "vocab" : "/projects/insituperf/Seer/Seer_Utils/vocab.json"
 }

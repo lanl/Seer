@@ -1,18 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(InWrap)
+project(Seer VERSION "0.3")
 
 set (CMAKE_CXX_STANDARD 11)
-include_directories(${CMAKE_SOURCE_DIR}/InWrap)
-include_directories(${CMAKE_SOURCE_DIR}/InWrap/utils)
-include_directories(${CMAKE_SOURCE_DIR}/InWrap/vtkStructures)
+include_directories(${CMAKE_SOURCE_DIR}/Seer_Sim)
+include_directories(${CMAKE_SOURCE_DIR}/Seer_Sim/utils)
+include_directories(${CMAKE_SOURCE_DIR}/Seer_Sim/vtkStructures)
+include_directories(${CMAKE_SOURCE_DIR}/Seer_Utils)
 
-set (INWRAP_LIBS "")
+set (SEER_LIBS "")
 
 
 # link shared lib with full rpath
 set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 
 # setup cache variables for ccmake
 if (NOT CMAKE_BUILD_TYPE)
@@ -58,36 +60,30 @@ if (ENABLE_CATALYST)
 endif()
 
 
-# InSitu
-option(ENABLE_INSITU "Enable InSitu" ON)
-if (ENABLE_INSITU)
-	add_definitions(-DINSITU_ON)
+# VeloC - NOT Supported right now!
+option(ENABLE_VELOC "Link the sim with SENSEI for in situ" OFF)
+if (ENABLE_VELOC)
+	set (VELOC_INCLUDE_PATH ${VELOC_INCLUDE_PATH} CACHE PATH "VeloC include directory")
+	set (VELOC_CLIENT_LIB ${VELOC_CLIENT_LIB} CACHE PATH "VeloC client library")
 
-
-	# VeloC
-	option(ENABLE_VELOC "Link the sim with SENSEI for in situ" OFF)
-	if (ENABLE_VELOC)
-		set (VELOC_INCLUDE_PATH ${VELOC_INCLUDE_PATH} CACHE PATH "VeloC include directory")
-		set (VELOC_CLIENT_LIB ${VELOC_CLIENT_LIB} CACHE PATH "VeloC client library")
-
-		add_definitions(-DVELOC_ENABLED)
-	endif()
-
-
-	# Sensei
-	option(ENABLE_SENSEI "Link the sim with SENSEI for in situ" OFF)
-	if (ENABLE_SENSEI)
-		find_package(SENSEI REQUIRED)
-
-		if (NOT SENSEI_FOUND)
-			message(FATAL_ERROR "Sensei not found")
-		else()
-			add_definitions(-DSENSEI_ENABLED)
-			set(SENSEI_ENABLED ON)
-		endif()
-	endif()
-
+	add_definitions(-DVELOC_ENABLED)
 endif()
+
+
+# Sensei - NOT Supported right now!
+option(ENABLE_SENSEI "Link the sim with SENSEI for in situ" OFF)
+if (ENABLE_SENSEI)
+	find_package(SENSEI REQUIRED)
+
+	if (NOT SENSEI_FOUND)
+		message(FATAL_ERROR "Sensei not found")
+	else()
+		add_definitions(-DSENSEI_ENABLED)
+		set(SENSEI_ENABLED ON)
+	endif()
+endif()
+
+
 
 
 # PAPI
@@ -101,48 +97,26 @@ if (USE_PAPI)
 endif()
 
 
-# Tau
-option(USE_TAU "Use TAU for profiling" OFF)
-if (USE_TAU)
-	set (CMAKE_CXX_COMPILER tau_cxx.sh)
-	set (CMAKE_C_COMPILER tau_cc.sh)
-	add_definitions(-DTAU_ENABLED)
-endif()
-
-
-# Mochi
-option(USE_MOCHI "Enable Mochi" OFF)
-if (USE_MOCHI)
-	find_package(PkgConfig REQUIRED)
-
-	# add our cmake module directory to the path
-	set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-     			"${CMAKE_CURRENT_SOURCE_DIR}/InWrap/cmake")
-
-	# packages we depend on
-	include (xpkg-import)
-	find_package (mercury CONFIG REQUIRED)
-	include_directories(${MERCURY_INCLUDE_DIR})
-	xpkg_import_module (argobots REQUIRED argobots)
-	xpkg_import_module (margo REQUIRED margo)
-
-	add_definitions(-DMOCHI_ENABLED)
-	set(MOCHI_ENABLED ON)
-endif()
-
 
 ## Not Optional!!!
 
-# VTK
-#if (NOT HAVE_VTK)
-#	find_package(VTK REQUIRED)
-#	if (VTK_FOUND)
-#		include(${VTK_USE_FILE})
-#		add_definitions(-DHAVE_VTK)
-#	else()
-#		message(FATAL_ERROR "Could not find vtk!!!") 
-#	endif()
-#endif()
+# Mochi
+find_package(PkgConfig REQUIRED)
+
+# add our cmake module directory to the path
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+			"${CMAKE_CURRENT_SOURCE_DIR}/InWrap/cmake")
+
+# packages we depend on
+include (xpkg-import)
+find_package (mercury CONFIG REQUIRED)
+include_directories(${MERCURY_INCLUDE_DIR})
+xpkg_import_module (argobots REQUIRED argobots)
+xpkg_import_module (margo REQUIRED margo)
+
+add_definitions(-DMOCHI_ENABLED)
+set(MOCHI_ENABLED ON)
+
 
 
 # MPI
@@ -157,10 +131,20 @@ else()
 	message(FATAL_ERROR "Could not find any MPI installation!!!") 
 endif()
 
+# OpenMP
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+
 
 # Applications
 #add_subdirectory(testing)
 add_subdirectory(demoApps)
+
 
 
 # Prevent in source builds since they are evil

@@ -30,7 +30,9 @@
     "catalyst-scripts": 
     [
         "/projects/insituperf/InWrap/scripts/catalyst/write_vtm.py"
-    ]
+    ],
+
+    "vocab" : "/projects/insituperf/Seer/Seer_Utils/vocab.json"
 }
 
 

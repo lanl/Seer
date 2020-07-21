@@ -1,10 +1,26 @@
 {
-	"keywords-desc" : "list of all allowed keywords",
-	"keywords" : [
-		"PAPI:ADD_COUNTER",
-		"PAPI:DEL_COUNTER",
-		"CATALYST:ADD_SCRIPT",
-		"CATALYST:DEL_SRIPT",
-		"SIM:GET_TIMER"
+	"keys-desc" : "list of all allowed keywords",
+
+	"event" :
+	[
+		{
+			"type " : "papi",
+			"keyval-output" : true
+		},
+
+		{
+			"keyword " : "catalyst",
+			"keyval-output" : false
+		},
+
+		{
+			"keyword " : "sim",
+			"keyval-output" : true
+		},
+
+		{
+			"keyword " : "mpi-profiling",
+			"keyval-output" : true
+		}
 	]
 }

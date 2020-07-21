@@ -7,15 +7,12 @@
 #include <thread>
 
 
-#ifdef INSITU_ON
-	#include "inSituWrap.hpp"
+#include "seerInSituWrap.hpp"
 
-	#ifdef CATALYST_ENABLED
-		#include "catalystAdaptor.h"
-	#elif SENSEI_ENABLED
-		#include "senseiBridge.h"
-	#endif
-
+#ifdef CATALYST_ENABLED
+	#include "catalystAdaptor.h"
+#elif SENSEI_ENABLED
+	#include "senseiBridge.h"
 #endif
 
 
@@ -35,10 +32,8 @@ int main(int argc, char *argv[])
 	int numTimesteps = 300;
 
 
-  #ifdef INSITU_ON
-	InWrap::InsituWrap insitu;
+	Seer::SeerInsituWrap insitu;
 	insitu.init(argc, argv, myRank, numRanks);
-  #endif
 
 
 	int window = 10;
@@ -76,9 +71,7 @@ int main(int argc, char *argv[])
 
 	for (int t = 0; t < numTimesteps; t++)
 	{
-	  #ifdef INSITU_ON
 		insitu.timestepInit();
-	  #endif
 
 		double *data = new double[numPoints];
 		std::vector<double> points;
@@ -96,7 +89,7 @@ int main(int argc, char *argv[])
 		}
 
 
-      #ifdef INSITU_ON
+
 		InWrap::UnstructuredGrid temp;
 		temp.setPoints(&points[0], numPoints, VTK_VERTEX);
 		temp.addScalarData("pressure", numPoints, data);
@@ -130,7 +123,6 @@ int main(int argc, char *argv[])
 
 		insitu.timestepExecute(t);
 
-	  #endif //insitu
 
 
 		if (myRank == 0)
