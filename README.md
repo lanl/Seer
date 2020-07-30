@@ -83,15 +83,15 @@ spack load -r py-sdskv
 ~~~
 
 
-#### server
+#### Launch Mochi server remotely
 
 ~~~bash
 sdskv-server-daemon na+sm foo:ldb -f address &                		# for shared mem
-sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test7:ldb &  # for distributed mem
+sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test1:ldb &  # for distributed mem
 ~~~
 
 
-#### client
+#### Run Sim remotely
 
 ~~~bash
 demoApps/testMPI na+sm://9923/0 1 foo 10                                    # shared mem
@@ -106,7 +106,7 @@ mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # di
 ~~~bash
 module load anaconda/Anaconda3 
 jupyter-notebook password                  # only needed first time
-jupyter-notebook --no-browser --port=8894 --ip=0.0.0.0
+jupyter-notebook --no-browser --port=8897 --ip=0.0.0.0
 ~~~
 
 * Local
@@ -114,13 +114,13 @@ jupyter-notebook --no-browser --port=8894 --ip=0.0.0.0
 ssh -N -f -L port:host:hostport username@cluster e.g.
 
 ~~~bash
-ssh -N -f -L 8894:cn36:8894 pascalgrosset@darwin-fe
+ssh -N -f -L 8897:cn36:8897 pascalgrosset@darwin-fe
 ~~~
 
 In Browser
 
 ~~~bash
-http://localhost:8894
+http://localhost:8897
 ~~~
 
 
@@ -128,8 +128,8 @@ http://localhost:8894
 
 Using Mochi, we can pass information to the sim while it is running. Keywords are as follows:
 
-* Key: PAPI_ADD, Value: <PAPI_COUNTER_NAME> - add a new PAPI Counter
-* Key: PAPI_DEL, Value: <PAPI_COUNTER_NAME> - remove an existing PAPI counter
+* Key: PAPI:ADD, Value: <PAPI_COUNTER_NAME> - add a new PAPI Counter
+* Key: PAPI:DEL, Value: <PAPI_COUNTER_NAME> - remove an existing PAPI counter
 
 
 ## No papi counters found

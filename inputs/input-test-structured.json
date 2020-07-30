@@ -7,7 +7,7 @@
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo_test6",
+        "name": "foo_test1",
         "polling-rate" : 1
     },
 

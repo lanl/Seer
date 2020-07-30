@@ -2,11 +2,12 @@ module purge
 module load openmpi/3.1.0-gcc_7.3.0
 module load papi/5.6.1
 
-spack load -r margo
-spack load -r sdskeyval
-spack load -r py-sdskv
-spack load vtk
-spack load cmake
+spack load -r /ytwvrre # margo
+spack load -r /xvkjxkz #sdskeyval
+spack load -r /4m7jqu6 #py-sdskv
+spack load -r /tpy5jxl #py-margo
+#spack load /zioiaxa #vtk
+spack load /3k2gxxp #cmake
 spack load /wnmdss5	# paraview@5.7.0
 spack load /pse7k4b # osmesa
 
