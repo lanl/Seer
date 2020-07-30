@@ -3,21 +3,16 @@
 Seer is a lightweight insitu wrapper library adding insitu capabilities to simulations.
 
 
-## Requirements:
+## Requirements
 
 * CMake 3.10 or above
 * C++ 11
 * MPI 3
 * Mochi
+* Paraview Catalyst
 
 
-### Optional Requirements
-
-* [Sensei](https://github.com/Kitware/sensei)
-* [Catalyst](https://www.paraview.org/files/v5.5/Catalyst-v5.5.2-Base-Enable-Python-Essentials-Extras-Rendering-Base.tar.gz)
-
-
-## Env Setup
+## Environment Setup
 
 * This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed, modify (or create) packages.yaml to contain the following:
 
@@ -27,35 +22,56 @@ packages:
         variants: fabrics=tcp,rxm
 ~~~
 
-* Setting up Mochi and VTK
+* Setting up packages
 
 ~~~bash
+spack install openmpi
+spack install cmake
+
+# Mochi
 git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
 spack repo add sds-repo
 spack install margo
 spack install sdskeyval+bdb+leveldb
 spack install py-sdskv
-spack install openmpi
-spack install cmake
-spack install vtk (spack install vtk ^hdf5+hl+mpi to bypass error) # VTK
+
+# To install Jupyter notebook (for the client)
+#   load the python associated with the mochi python 
+spack load -r py-sdskv  
+
+#   install jupyter for that python
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python get-pip.py 
+python -m pip install jupyter
+
+# ParaView
+spack install paraview@5.7.0 +osmesa +python3
+
+# VTK (Optional for testing)
+spack install vtk #(spack install vtk ^hdf5+hl+mpi to bypass error)
+
+# Papi (usually already on the server and doesn't need install)
+spack install papi
 ~~~
 
-If linking to catalyst, ParaView needs to be installed as well
 
-
-## Building
+## Building the sim
 
 The following environment needs to be activated as follows:
 
 ~~~bash
+# load whatever modules the sim needs
+
+# load Seer insitu stuff as follows
 spack load -r margo
 spack load -r sdskeyval
 
 spack load paraview@5.7.0
-spack load /6uyrlxs #mesa needed for ParaView without X
+spack load mesa #needed for ParaView without X
 
 cd src
 mkdir build
+
 cd build
 ccmake ..
 ~~~
@@ -63,73 +79,99 @@ ccmake ..
 
 ## Running
 
-There are two parts of running the insitu package, i) running the sim, and ii) running the client
+There are three parts of running the insitu package
+
+1. launch the mochi server
+2. run the sim
+3. run the client
 
 
-### Env setup to run sim
+### 1. Run the Mochi Server (done on server, usually in a batch script)
 
 ~~~bash
-spack load -r /ayohgie #margo
+# Load the modules
+spack load -r margo
+spack load -r sdskeyval
+
+# Distributed memory
+# skv-server-daemon ofi+tcp://<path of server>:<port of server> <name of db>:ldb &
+sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test1:ldb &
+
+# Shared memory (testing purposes)
+sdskv-server-daemon na+sm foo:ldb -f address &
+~~~
+
+
+### 2. Run the Sim (usually batch script)
+
+~~~bash
+# load whatever modules the sim needs
+
+# load Seer insitu stuff as follows 
+spack load -r margo
 spack load -r sdskeyval
 
 spack load paraview@5.7.0
-spack load /6uyrlxs #mesa needed for ParaView
+spack load mesa #needed for ParaView without X
+
+
+# Run the sim
+
+# Distributed memory
+# mpirun -np 4 <sim_name> --insitu <input file>
+mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  
+
+# Shared memory (testing purposes
+demoApps/testMPI na+sm://9923/0 1 foo 10  
 ~~~
 
-### Env setup to run python client
+### 3. Run the client
+
+#### Remote (On Server)
 
 ~~~bash
+# Load the modules
 spack load -r py-sdskv
-~~~
 
+# only needed first time
+jupyter-notebook password
 
-#### Launch Mochi server remotely
-
-~~~bash
-sdskv-server-daemon na+sm foo:ldb -f address &                		# for shared mem
-sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test1:ldb &  # for distributed mem
-~~~
-
-
-#### Run Sim remotely
-
-~~~bash
-demoApps/testMPI na+sm://9923/0 1 foo 10                                    # shared mem
-mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  # distributed mem
-~~~
-
-
-#### Jupyter
-
-* Remote
-
-~~~bash
-module load anaconda/Anaconda3 
-jupyter-notebook password                  # only needed first time
+# Launch jupyter notebook on the server
+# jupyter-notebook --no-browser --port=<port_number> --ip=0.0.0.0
 jupyter-notebook --no-browser --port=8897 --ip=0.0.0.0
+
 ~~~
 
-* Local
-
-ssh -N -f -L port:host:hostport username@cluster e.g.
+#### Local (client)
 
 ~~~bash
+# Tunnel to the server
+#   ssh -N -f -L <port_number>:<host_name>:<port_number> username@cluster 
 ssh -N -f -L 8897:cn36:8897 pascalgrosset@darwin-fe
 ~~~
 
-In Browser
+In the browser:
 
 ~~~bash
+# http://localhost:<port_number>
 http://localhost:8897
 ~~~
 
+# Note
 
-## Adding runtime options using Mochi
+## Environment setup
 
-Using Mochi, we can pass information to the sim while it is running. Keywords are as follows:
+Scripts for setting up the environment different platforms are located in the evn folder
 
-* Key: PAPI:ADD, Value: <PAPI_COUNTER_NAME> - add a new PAPI Counter
-* Key: PAPI:DEL, Value: <PAPI_COUNTER_NAME> - remove an existing PAPI counter
+* <machine_name>_sim.sh
+* <machine_name>_mochiServer.sh
+* <machine_name>_jupyter.sh
+
+Scripts for launching sims are located in the script folder.
+
+* miniAppStruc_darwin.sh
+* runBatch__256_16_16_scaling_mochi.sh
+* runBatch__64_8_8_glaton_mochi.s
 
 
 ## No papi counters found
