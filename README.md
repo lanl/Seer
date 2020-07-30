@@ -161,17 +161,17 @@ http://localhost:8897
 
 ## Environment setup
 
-Scripts for setting up the environment different platforms are located in the evn folder
+Scripts for setting up the environment different platforms are located in the evn folder:
 
 * <machine_name>_sim.sh
 * <machine_name>_mochiServer.sh
 * <machine_name>_jupyter.sh
 
-Scripts for launching sims are located in the script folder.
+Scripts for launching sims are located in the script folder:
 
 * miniAppStruc_darwin.sh
 * runBatch__256_16_16_scaling_mochi.sh
-* runBatch__64_8_8_glaton_mochi.s
+* runBatch__64_8_8_glaton_mochi.sh
 
 
 ## No papi counters found
