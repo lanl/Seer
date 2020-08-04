@@ -75,7 +75,7 @@ class SeerClient:
 
     def list_keyVal(self):
         key,val = self.db.list_keyvals()
-        return key,val
+        return key,valvlist_keyvals
 
 
     def shutdown(self):
@@ -86,13 +86,13 @@ class SeerClient:
     # User Operations
     def list_keys(self):
         """List my keys and general ones"""
-        key,val = self.list_keyVal()
+        keys,vals = self.list_keyVal()
   
         my_keys = []
-        for k in key:
-            if k[8] == ':' and key.startswith(self.hash_val) or key.startswith("00000000"): 
-                if key not in self.removed_keys:
-                    my_keys.append(key)
+        for k in keys:
+            if k.startswith(self.hash_val) or k.startswith("00000000"): 
+                if k not in self.removed_keys:
+                    my_keys.append(k)
     
         return my_keys
 
@@ -103,9 +103,9 @@ class SeerClient:
   
         my_keys = []
         for k in key:
-            if key.startswith(self.hash_val):   #my keys only
-                if key not in self.removed_keys:
-                    my_keys.append(key)
+            if k.startswith(self.hash_val):   #my keys only
+                if k not in self.removed_keys:
+                    my_keys.append(k)
     
         return my_keys
        

@@ -56,12 +56,12 @@ struct eventsUsers
 		auto it = eventHashes.find(event);
 		if (it != eventHashes.end())
 		{
-			//std::cout << "Found " << event << " inserting: " << hash << ",set size: " << it->second.size() << std::endl; 
+			log << "Found " << event << " inserting: " << hash << ",set size: " << it->second.size() << std::endl; 
 			it->second.insert(hash);
 		}
 		else
 		{
-			//std::cout << "Not found " << event << std::endl;
+			log << "Event Not found " << event << std::endl;
 			std::set< std::string> s;
     		s.insert(hash);
 			eventHashes.insert( { event, s } );
@@ -89,10 +89,14 @@ struct eventsUsers
 	{
 		std::vector<std::string> temp;
 		temp.resize(0);
+
+		log << "event key: " << event << std::endl;
 		
 		auto it = eventHashes.find(event);
 		if (it != eventHashes.end())
 			std::copy(it->second.begin(), it->second.end(), std::back_inserter(temp));
+		else
+			log << "event key: " << event <<  " not found!" << std::endl;
 
 		return temp;
 	}
@@ -532,8 +536,6 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 		std::string value = std::to_string( numRanks );
 		mochi.putKeyValue("00000000@" + key, value);
 
-		int keyExists = mochi.existsKey("numRanks");
-
 		log << "added numRanks to mochi" << std::endl;
 	}
 
@@ -682,6 +684,7 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 		// Get number of events
 		for (int e=0; e<papiEvent.getNumEvents(); e++)
 		{
+			log << "papiEvent.getNumEvents(): " << papiEvent.getNumEvents() << std::endl;
 			perf.insert( std::make_pair<std::string, long long>(papiEvent.getPapiEventName(e), papiEvent.getHwdValue(e)) );
 
 			if (mochi_on)
@@ -689,10 +692,15 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 				std::string key   = papiEvent.getPapiEventName(e) + "_" + std::to_string( myRank );
     			std::string value = std::to_string( papiEvent.getHwdValue(e) );
 
+				log << "key, value from papi: " << key << ":" << value << std::endl;
+
 				// Append user hash before putting in mochi
-				std::vector< std::string > userHashes = eventHash.getHashes(key);
+				std::vector< std::string > userHashes = eventHash.getHashes(papiEvent.getPapiEventName(e));
 				for (auto uh=userHashes.begin(); uh!=userHashes.end(); uh++)
+				{
 					mochi.putKeyValue(*uh + "@" + key, value);
+					log << "added to mochi: " << *uh << "@" << key << ":" << value << std::endl;
+				}
 			}
 
 		}
@@ -710,6 +718,7 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 		std::string key   = "current_timestep";
     	std::string value = std::to_string( ts );
 		mochi.putKeyValue("00000000@" + key, value);
+		log << "added to mochi: " << "00000000@" << key << ":" << value << std::endl;
 	}
 
   clock.stop("mochi_put_data");

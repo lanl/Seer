@@ -5,7 +5,7 @@
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo_test4",
+        "name": "foo_test5",
         "polling-rate": 1
     },
     "log_prefix": "struc_test",

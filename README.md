@@ -147,7 +147,7 @@ jupyter-notebook --no-browser --port=8897 --ip=0.0.0.0
 ~~~bash
 # Tunnel to the server
 #   ssh -N -f -L <port_number>:<host_name>:<port_number> username@cluster 
-ssh -N -f -L 8897:cn36:8897 pascalgrosset@darwin-fe
+ssh -N -f -L 8898:cn36:8898 pascalgrosset@darwin-fe
 ~~~
 
 In the browser:
