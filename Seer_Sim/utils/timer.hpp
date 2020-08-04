@@ -18,19 +18,13 @@ namespace Seer
 
 class Timer
 {
-	std::map<
-		std::string,
-		std::chrono::time_point<std::chrono::system_clock> 
-				> timers;
-				
-	std::map< 
-		std::string, 
-		std::chrono::duration<double> 
-				> timers_duration;
+	std::map< std::string, std::chrono::time_point<std::chrono::system_clock> > timers;		
+	std::map< std::string, std::chrono::duration<double> > timers_duration;
 
   public:
-	Timer();
-	~Timer();
+	Timer(){};
+	Timer(std::string timerName){ start(timerName); }
+	~Timer(){};
 
 	int start(std::string timerName);
 	int stop(std::string timerName);
@@ -41,8 +35,6 @@ class Timer
 	static std::string getCurrentTime();	// get the current time
 };
 
-inline Timer::Timer() {}
-inline Timer::~Timer() {}
 
 
 inline int Timer::start(std::string timerName) 
@@ -51,7 +43,13 @@ inline int Timer::start(std::string timerName)
 	if (timers.find(timerName) == timers.end())
 		timers.insert( std::pair<std::string,std::chrono::time_point<std::chrono::system_clock>>(timerName,startTime) );	
 	else
+	{
 		timers[timerName] = startTime;
+
+		// remove previous durarion
+		auto it=timers_duration.find(timerName);
+  		timers_duration.erase(it); 
+	}
 
 	return 1;
 }
@@ -63,9 +61,10 @@ inline int Timer::stop(std::string timerName)
 	{
 		auto endTime = std::chrono::system_clock::now(); 
 		auto elapsed_time = endTime - timers[timerName];
-		auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count();
-		timers_duration.insert( std::pair<std::string,std::chrono::duration<double>>(timerName, elapsed_seconds) );
-		   return 1;
+
+		//auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed_time).count();
+		timers_duration.insert( std::pair<std::string,std::chrono::duration<double>>(timerName, elapsed_time) );
+		return 1;
 	}
 	else
 	{
@@ -79,7 +78,6 @@ inline double Timer::getDuration(std::string timerName)
 { 
 	if (timers_duration.find(timerName) != timers_duration.end())
 	{
-
 		return (timers_duration[timerName]).count(); 
 	}
 	else
@@ -87,34 +85,6 @@ inline double Timer::getDuration(std::string timerName)
 		std::cout << "Timer " << timerName << " does NOT exist!!!" << std::endl;
 		return -1;
 	}
-}
-
-
-inline double Timer::getCurrentDuration(std::string timerName)
-{ 
-	if (timers.find(timerName) != timers.end())
-	{
-		auto timeNow = std::chrono::system_clock::now();
-		auto elapsed_time = timeNow - timers[timerName];
-		auto elapsed_seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed_time).count();
-		return elapsed_seconds; 
-	}
-	else
-	{
-		std::cout << "Timer " << timerName << " does NOT exist!!!" << std::endl;
-		return -1;
-	}
-}
-
-
-inline std::string Timer::getCurrentTime()
-{
-	time_t now = time(0);
-	tm *ltm = localtime(&now);
-
-	std::stringstream ss;
-	ss << "_" << 1 + ltm->tm_mon << "_" << ltm->tm_mday << "__" << ltm->tm_hour << "_" << ltm->tm_min << "_" << ltm->tm_sec << "_" << std::endl;
-	return ss.str();
 }
 
 } //Namespace Seer

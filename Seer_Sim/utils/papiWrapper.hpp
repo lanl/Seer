@@ -75,6 +75,7 @@ class PAPIWrapper
 
   	int handlePAPIError(std::string msg="")
 	{
+		std::cout << "Error at :" << msg << std::endl;
     	PAPI_perror(msg.c_str());
     	return 0;
 	}
@@ -142,12 +143,12 @@ inline int PAPIWrapper::createPapiEventSet()
 	// Create an EventSet
 	int retval = PAPI_create_eventset(&eventSet);
 	if (retval != PAPI_OK)
-		return handlePAPIError();
+		return handlePAPIError("PAPI_create_eventset");
 
 	// Assign it to the CPU component
   	retval = PAPI_assign_eventset_component(eventSet, 0);
   	if (retval != PAPI_OK) 
-  		return handlePAPIError();
+  		return handlePAPIError("PAPI_assign_eventset_component");
 
   	// Check  current multiplex status
    	retval = PAPI_get_multiplex(eventSet);
@@ -159,7 +160,7 @@ inline int PAPIWrapper::createPapiEventSet()
  	// Convert the EventSet to a multiplexed event set
   	if (retval == 1) 
   		if (PAPI_set_multiplex(eventSet) != PAPI_OK) 
-  			return handlePAPIError();
+  			return handlePAPIError("PAPI_set_multiplex");
 
 	return 1;
 }
@@ -260,7 +261,7 @@ inline int PAPIWrapper::addPapiEvent(int eventCode)
 inline int PAPIWrapper::startPapi()
 {
 	if (PAPI_start(eventSet) != PAPI_OK)
-		return handlePAPIError();
+		return handlePAPIError("PAPI_start");
 
 	hwdValues = new long long[numEvents];
 
@@ -271,7 +272,7 @@ inline int PAPIWrapper::startPapi()
 inline int PAPIWrapper::readEvents()
 {
 	if (PAPI_read(eventSet, hwdValues) != PAPI_OK)
-		return handlePAPIError();
+		return handlePAPIError("PAPI_read");
 
 	return 1;
 }
@@ -280,7 +281,7 @@ inline int PAPIWrapper::readEvents()
 inline int PAPIWrapper::stopReading()
 {
 	if (PAPI_stop(eventSet, hwdValues) != PAPI_OK)
-		return handlePAPIError();
+		return handlePAPIError("PAPI_stop");
 
 	return 1;
 }

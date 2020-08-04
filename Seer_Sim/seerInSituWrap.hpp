@@ -44,6 +44,8 @@
 namespace Seer
 {
 
+std::stringstream log;
+std::string logName;
 
 struct eventsUsers
 {
@@ -157,8 +159,8 @@ class SeerInsituWrap
 	int numTimesteps;
 	int currentTimestep;
 
-	std::stringstream log;
-	std::string logName;
+	//std::stringstream log;
+	//std::string logName;
 
 
 	// vtk data
@@ -395,39 +397,37 @@ int SeerInsituWrap::initInSitu(int _myRank, int _numRanks)
 	// Get mochi configuration and connect
 	if ( jsonInputConfig.contains("mochi-database") )
 	{
-		mochi_on = jsonInputConfig["mochi"];
+		mochi_on = true;
 
 		// Read in mochi server parameters to connect to it
-		if (mochi_on)
+		if ( jsonInputConfig.find("mochi-database") != jsonInputConfig.end() )
 		{
-			if ( jsonInputConfig.find("mochi-database") != jsonInputConfig.end() )
+			if ( jsonInputConfig["mochi-database"].find("name") != jsonInputConfig["mochi-database"].end() )
+				mochi_database = jsonInputConfig["mochi-database"]["name"];
+
+			if ( jsonInputConfig["mochi-database"].find("address") != jsonInputConfig["mochi-database"].end() )
 			{
-				if ( jsonInputConfig["mochi-database"].find("name") != jsonInputConfig["mochi-database"].end() )
-					mochi_database = jsonInputConfig["mochi-database"]["name"];
-
-				if ( jsonInputConfig["mochi-database"].find("address") != jsonInputConfig["mochi-database"].end() )
-				{
-					mochi_address = jsonInputConfig["mochi-database"]["address"];
-					mochi_address += jsonInputConfig["mochi-database"]["port"];
-				}
-
-				if ( jsonInputConfig["mochi-database"].find("multiplex") != jsonInputConfig["mochi-database"].end() )
-					mochi_multiplex = jsonInputConfig["mochi-database"]["multiplex"];
+				mochi_address = jsonInputConfig["mochi-database"]["address"];
+				mochi_address += jsonInputConfig["mochi-database"]["port"];
 			}
 
-			// If no mochi info is provided, turn it off!!!
-			if ((mochi_database == "" || mochi_address == "") || mochi_multiplex == 0)
-			{
-				mochi_on = false;
-				insitu_on = false;
-				std::cout << "Could not connect to Mochi, exiting ..." << std::endl;
-			}
-			else
-			{
-				log << "mochi on" << std::endl;
-				mochi.init(mochi_address, mochi_multiplex, mochi_database);
-			}
+			if ( jsonInputConfig["mochi-database"].find("multiplex") != jsonInputConfig["mochi-database"].end() )
+				mochi_multiplex = jsonInputConfig["mochi-database"]["multiplex"];
 		}
+
+		// If no mochi info is provided, turn it off!!!
+		if ((mochi_database == "" || mochi_address == "") || mochi_multiplex == 0)
+		{
+			mochi_on = false;
+			insitu_on = false;
+			std::cout << "Could not connect to Mochi, exiting ..." << std::endl;
+		}
+		else
+		{
+			log << "mochi on" << std::endl;
+			mochi.init(mochi_address, mochi_multiplex, mochi_database);
+		}
+		
 	}
 
 	return (int)mochi_on;
@@ -522,6 +522,8 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
   clock.stop("initialization");
 
 
+	log << "starting SeerInsituWrap::init" << std::endl;
+
 	//
 	// Put a value in the keyval storage for testing purposes
 	if (myRank == 0)
@@ -531,6 +533,8 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 		mochi.putKeyValue("00000000@" + key, value);
 
 		int keyExists = mochi.existsKey("numRanks");
+
+		log << "added numRanks to mochi" << std::endl;
 	}
 
 
@@ -538,11 +542,14 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 	// Add different metrics, scripts, ... whatever the sim needs
 	//
 
+
+
 	// PAPI Init
   clock.start("papi");
   
   #ifdef PAPI_ENABLED
-	if ( jsonInputConfig.contains("papi") )
+	log << "PAPI_ENABLED!" << std::endl;
+	if ( jsonInputConfig.contains("papi_counters") )
 	{
 		papi_on = papiEvent.initPapi();	// Check if papi has been successfully initialized
 		if (papi_on)
@@ -557,8 +564,13 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 			}
 		}
 		else
+		{
+			log << "Could not initialize PAPI" << std::endl;
 			std::cout << "Could not initialize PAPI" << std::endl;
-	} 
+		}
+	}
+  #else
+	log << "PAPI_ENABLED not defined!" << std::endl;
   #endif  
 
   clock.stop("papi");
@@ -568,7 +580,8 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
   clock.start("catalyst");
 
   #ifdef CATALYST_ENABLED
-	if ( jsonInputConfig.contains("catalyst") )
+	log << "CATALYST_ENABLED" << std::endl;
+	if ( jsonInputConfig.contains("catalyst-scripts") )
 	{
 		std::cout << "catalyst on" << std::endl;
 
@@ -578,8 +591,12 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 
 		cat.init(catalyst_scripts.size(), catalyst_scripts);
 		catalyst_on = true;
-		std::cout << "catalyst initiated" << std::endl;
+
+		std::cout << "catalyst initialized" << std::endl;
+		log << "catalyst initialized" << std::endl;
 	}
+  #else
+	log << "CATALYST_ENABLED not defined!" << std::endl;
   #endif
 
   clock.stop("catalyst");
@@ -602,7 +619,10 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 	log << "   SeerInsituWrap init papi took : " << clock.getDuration("papi") << " s" << std::endl;
 	log << "   SeerInsituWrap init catalyst took : " << clock.getDuration("catalyst") << " s" << std::endl;
 	
-	Seer::writeLog(logName, log.str());
+	//Seer::writeLog(logName, log.str());
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (myRank == 0) std::cout << "Seer insitu initilized!" << std::endl;
 
 	return 1;
 }
@@ -641,24 +661,23 @@ inline int SeerInsituWrap::timestepInit()
 
 inline int SeerInsituWrap::timestepExecute(int ts)
 {
-	Timer clock;
-  clock.start("timestepExecute");
-
 	if (!insitu_on)
 		return 0;
 
+	Timer clock;
+  clock.start("timestepExecute");
 
 
 	//
 	// Send Out events to the Mochi server
 	//
+
   clock.start("mochi_put_data");  
 	clock.start("papi");
   #ifdef PAPI_ENABLED
 	if (papi_on)
 	{	
 		papiEvent.readEvents();
-
 
 		// Get number of events
 		for (int e=0; e<papiEvent.getNumEvents(); e++)
@@ -674,8 +693,6 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 				std::vector< std::string > userHashes = eventHash.getHashes(key);
 				for (auto uh=userHashes.begin(); uh!=userHashes.end(); uh++)
 					mochi.putKeyValue(*uh + "@" + key, value);
-				
-				std::cout << myRank << " ~ " << ts << " : mochi on, papi: " << key << ", " << value << std::endl;
 			}
 
 		}
@@ -693,8 +710,6 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 		std::string key   = "current_timestep";
     	std::string value = std::to_string( ts );
 		mochi.putKeyValue("00000000@" + key, value);
-
-		std::cout << myRank << " ~ " << ts << " output current ts " << std::endl;
 	}
 
   clock.stop("mochi_put_data");
@@ -705,7 +720,6 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 		MPI_Pcontrol(3);
 
 	
-
 	//
 	// Read in new values from the mochi server: Mochi listener and parser
 	//
@@ -723,7 +737,6 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 	}
 
   clock.stop("mochi_gather");
-  
 
 	currentTimestep++;
 
@@ -733,8 +746,6 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 	log << " SeerInsituWrap timestepExecute papi took: " << clock.getDuration("papi") << " s" << std::endl;
 	log << " SeerInsituWrap timestepExecute: mochi put data took: " << clock.getDuration("mochi_put_data") << " s" << std::endl;
 	log << " SeerInsituWrap timestepExecute: mochi gather data took: " << clock.getDuration("mochi_gather") << " s" << std::endl;
-	
-	Seer::writeLog(logName, log.str());
   
 	return 1;
 }
@@ -915,20 +926,17 @@ void SeerInsituWrap::readFromMochi()
 		}
 	  clock.stop("erase-key");
 
+
 		MPI_Barrier(MPI_COMM_WORLD);
+		log << k << " find_keyval took: " 	<< clock.getDuration("find_keyval") << " s" << std::endl;
+		log << k << " papi-find took: " 	<< clock.getDuration("papi-find") << " s" << std::endl;
+		log << k << " catalyst-find took: " << clock.getDuration("catalyst-find") << " s" << std::endl;
+		log << k << " sim-find took: " 		<< clock.getDuration("papi-find") << " s" << std::endl;
+		log << k << " erase-key took: " 	<< clock.getDuration("erase-key") << " s" << std::endl;
 	}
 
-	  
-
-
-	log << "find_new_keys polling took: " 	<< clock.getDuration("find_new_keys") << " ms" << std::endl;
-	log << "find_keyval took: " 	<< clock.getDuration("find_keyval") << " ms" << std::endl;
-	log << "papi-find took: " 		<< clock.getDuration("papi-find") << " ms" << std::endl;
-	log << "  papi add took: " 		<< clock.getDuration("papi-add-putKeyValue") << " ms" << std::endl;
-	log << "  papi del took: " 		<< clock.getDuration("papi-del-putKeyValue") << " ms" << std::endl;
-	log << "catalyst-find took: " 	<< clock.getDuration("catalyst-find") << " ms" << std::endl;
-	log << "sim-find took: " 		<< clock.getDuration("papi-find") << " ms" << std::endl;
-	log << "erase-key took: " 		<< clock.getDuration("erase-key") << " ms" << std::endl;
+	log << "find_new_keys polling took: " 	<< clock.getDuration("find_new_keys") << " s" << std::endl;
+	
 }
 
 

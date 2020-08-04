@@ -218,7 +218,7 @@ inline int CatalystAdaptor::addPipelines(int numScripts, std::vector<std::string
 		{
 			Processor->AddPipeline(pipeline.GetPointer());
 			numValidScripts++;
-			std::cout << "scripts[i]" << scripts[i] << "added to pipeline" <<std::endl;
+			std::cout << "scripts[i]" << scripts[i] << " was added to the pipeline" <<std::endl;
 		}
 		else
 		{

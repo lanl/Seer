@@ -1,35 +1,25 @@
 {
-    "mochi": true,
-    "mochi-database": 
-    {
-        "address": "ofi+tcp://192.168.101.186",
+    "mochi-database": {
+        "address": "ofi+tcp://192.168.101.190",
         "port": ":1234",
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo_test1",
-        "polling-rate" : 1
+        "name": "foo_test4",
+        "polling-rate": 1
     },
-
-    "log_prefix" : "struc_test",
+    "log_prefix": "struc_test",
     "mpi-profiling": true,
-
-    "papi": true,
-    "papi_counters": 
-    [
+    "papi_counters": [
         "PAPI_BR_UCN",
         "PAPI_VEC_SP"
     ],
-
-
-    "catalyst": true,
-    "catalyst-scripts": 
-    [
-        "/projects/insituperf/InWrap/scripts/catalyst/write_vtm.py"
+    "catalyst-scripts": [
+        "/projects/insituperf/Seer/scripts/catalyst/write_vtm.py"
     ],
     "events-to-record": [
         "loop-time",
         "comp-time"
     ],
-    "vocab" : "/projects/insituperf/Seer/Seer_Utils/vocab.json"
+    "vocab": "/projects/insituperf/Seer/Seer_Utils/vocab.json"
 }

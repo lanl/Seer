@@ -26,7 +26,7 @@ int fib(int n)
 
 int main(int argc, char *argv[])
 {
-	std::stringstream msgLog;
+	//std::stringstream msgLog;
 
 	int myRank, numRanks, threadSupport;
 	MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &threadSupport);
@@ -34,16 +34,13 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
 	int numPoints = 100;
-	int numTimesteps = 300;
+	int numTimesteps = 500;
 
 	srand(time(NULL) + myRank);
 
 
-
 	Seer::SeerInsituWrap insitu;
 	insitu.init(argc, argv, myRank, numRanks);
-
-
 
 	char processor_name[256];
 	int processor_name_len;
@@ -62,15 +59,9 @@ int main(int argc, char *argv[])
 	{
 		clock.start("mainLoop");
 
-		if (myRank == 0)
-			std::cout  << "ts: " << t << std::endl;
-
-	  #ifdef INSITU_ON
 		insitu.timestepInit();
-	  #endif
 
-
-		msgLog << "\nTimestep: " << t << std::endl;
+		Seer::log << "\nTimestep: " << t << std::endl;
 
 		int dimX, dimY, dimZ, dims[3];
 		dims[0] = dimX = 2; 
@@ -95,7 +86,7 @@ int main(int argc, char *argv[])
 
 					numPoints++;
 
-					msgLog << "Point: " << pnt[0] << ", " << pnt[1] << ", " << pnt[2] << std::endl;
+					//msgLog << "Point: " << pnt[0] << ", " << pnt[1] << ", " << pnt[2] << std::endl;
 				}
 
 
@@ -128,13 +119,10 @@ int main(int argc, char *argv[])
 
 		clock.stop("factComputation");
 
-		msgLog << "\nnumPoints: " << numPoints << " point data: " << myRank + t * 0.01 << std::endl;
-		msgLog << "numCells: " << numCells << " cell data: " << myRank + t * 0.05 << std::endl;
+		Seer::log << "\nnumPoints: " << numPoints << " point data: " << myRank + t * 0.01 << std::endl;
+		Seer::log << "numCells: " << numCells << " cell data: " << myRank + t * 0.05 << std::endl;
 
 		clock.stop("mainLoop");
-
-
-		MPI_Barrier(MPI_COMM_WORLD);
 
 		if (insitu.isInsituOn())
 		{
@@ -145,25 +133,25 @@ int main(int argc, char *argv[])
 
 
 			Seer::StructuredGrid temp;
+			{
+				temp.setWholeExtents(0,numRanks, 0,dimY-1, 0,dimZ-1);
+
+				temp.setDims(dimX, dimY, dimZ);
+				temp.setExtents(myRank,myRank+1, 0,dimY-1, 0,dimZ-1);
 
 
-			temp.setWholeExtents(0,numRanks, 0,dimY-1, 0,dimZ-1);
+				temp.setPoints(&points[0], numPoints);
+				temp.addFieldData("processor_name", tempVector, 3);
+				
+				temp.addFieldData("myRank", &myRank);
+				temp.addFieldData("numRanks", &numRanks);
+				temp.addFieldData("tempp_" + std::to_string(myRank), &myRank);
 
-	        temp.setDims(dimX, dimY, dimZ);
-	        temp.setExtents(myRank,myRank+1, 0,dimY-1, 0,dimZ-1);
-
-
-			temp.setPoints(&points[0], numPoints);
-			temp.addFieldData("processor_name", tempVector, 3);
-			
-			temp.addFieldData("myRank", &myRank);
-			temp.addFieldData("numRanks", &numRanks);
-			temp.addFieldData("tempp_" + std::to_string(myRank), &myRank);
-
-			temp.addScalarPointData("vert-data", numPoints, pointData);
-			temp.addScalarCellData("cell-data-scalar", numCells, cellData);
-			temp.addScalarCellData("cell-data-fact", numCells, cellDataFact);
-			temp.addScalarCellData("_rank", numCells, cellRankData);
+				temp.addScalarPointData("vert-data", numPoints, pointData);
+				temp.addScalarCellData("cell-data-scalar", numCells, cellData);
+				temp.addScalarCellData("cell-data-fact", numCells, cellDataFact);
+				temp.addScalarCellData("_rank", numCells, cellRankData);
+			}
 
 		  #ifdef  CATALYST_ENABLED
 			if (insitu.isCatalystOn())
@@ -176,7 +164,7 @@ int main(int argc, char *argv[])
 	
 			//temp.writeParts(numRanks, myRank, myRank, "testStructuredMPI_" + std::to_string(t));
 
-			Seer::writeLog( "myLog_" + std::to_string(myRank), msgLog.str());
+			Seer::writeLog( "logs/myLog_" + std::to_string(myRank), Seer::log.str());
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000));

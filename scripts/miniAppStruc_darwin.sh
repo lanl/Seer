@@ -1,18 +1,18 @@
 #!/bin/bash
-#SBATCH -N 1
+#SBATCH -N 2
 #SBATCH --ntasks-per-node 1
 #SBATCH -p galton
 
 export MPIP="-t 10.0"
-projectpath=/projects/insituperf/InWrap
-pythonExe=/home/pascalgrosset/miniconda3/bin/python
+projectpath=/projects/insituperf/Seer
+#pythonExe=/home/pascalgrosset/miniconda3/bin/python
 
 # init spack
 export SPACK_ROOT=$HOME/spack
 source $SPACK_ROOT/share/spack/setup-env.sh
 
 # load modules
-source $projectpath/InWrap/scripts/env_setup_darwin.sh
+source $projectpath/evn/env_darwin_sim.sh
 
 
 module list
@@ -25,17 +25,18 @@ node1=${nodes_array[0]}
 ip=$(srun --nodes=1 --ntasks=1 -w $node1 hostname --ip-address)
 echo $ip
 
-cd $projectpath/build
+cd $projectpath/buildII
 mkdir logs
 
 
 # Create 
-#mpirun $pythonExe $projectpath/InWrap/python-utils/createJson.py $ip $projectpath/inputs/input-test-structured.json
+mpirun python $projectpath/Seer_Mochi/createJsonConfig.py $ip $projectpath/inputs/input-test-structured.json
 
+echo "create Json done"
 
 # Execute jobs in parallel: server + demoApp
-#mpirun $pythonExe $projectpath/InWrap/python-utils/launchServer.py $projectpath/inputs/input-test-structured.json &
-mpirun $projectpath/build/demoApps/miniAppStructured --insitu $projectpath/inputs/input-test-structured.json
+mpirun python $projectpath/Seer_Mochi/launchMochiServer.py $projectpath/inputs/input-test-structured.json &
+mpirun $projectpath/buildII/demoApps/miniAppStructured --insitu $projectpath/inputs/input-test-structured.json
 
 ## Terminate the server
 #mpirun $pythonExe $projectpath/InWrap/python-utils/shutDownServer.py $projectpath/inputs/input-test-structured.json 
