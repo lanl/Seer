@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	// Loop over timesteps
 	for (int t = 0; t < numTimesteps; t++)
 	{
-		clock.start("mainLoop");
+	  clock.start("mainLoop");
 
 		insitu.timestepInit();
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 		double *cellDataFact = new double[numCells];
 		int *cellRankData = new int[numCells];
 
-		clock.start("factComputation");
+	  clock.start("factComputation");
 
 		for (int i = 0; i < numCells ; i++)
 		{
@@ -117,15 +117,26 @@ int main(int argc, char *argv[])
 			cellRankData[i] = myRank;
 		}
 
-		clock.stop("factComputation");
+	  clock.stop("factComputation");
 
 		Seer::log << "\nnumPoints: " << numPoints << " point data: " << myRank + t * 0.01 << std::endl;
 		Seer::log << "numCells: " << numCells << " cell data: " << myRank + t * 0.05 << std::endl;
 
-		clock.stop("mainLoop");
+	  clock.stop("mainLoop");
 
 		if (insitu.isInsituOn())
 		{
+			MPI_Barrier(MPI_COMM_WORLD);
+			if (myRank == 0)
+				std::cout << "Enter mainLoop..." << std::endl;
+				
+			insitu.simEvents["mainLoop"] = std::to_string(clock.getDuration("mainLoop"));
+			insitu.simEvents["factComputation"] = std::to_string(clock.getDuration("factComputation"));
+
+			MPI_Barrier(MPI_COMM_WORLD);
+			if (myRank == 0)
+				std::cout << "Enter mainLoop done!" << std::endl;
+
 			float tempVector[3];
 			tempVector[0] = myRank;
 			tempVector[1] = myRank+0.2;
@@ -169,6 +180,10 @@ int main(int argc, char *argv[])
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 		MPI_Barrier(MPI_COMM_WORLD);
+
+		if (myRank == 0)
+			std::cout << "ts: " << t << std::endl;
+		
 	}
 
 	MPI_Finalize();

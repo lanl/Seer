@@ -148,7 +148,7 @@ class SeerClient:
             print("key: ", key_padded)
             print("val: ", val)
 
-        self.db.put(new_key, hash_val)  # adding keys done
+        self.db.put(new_key, self.hash_val)  # adding keys done
         self.addingKeys = False
 
         # Delete keys

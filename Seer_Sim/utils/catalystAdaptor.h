@@ -157,7 +157,7 @@ inline void CatalystAdaptor::init(int numScripts, std::vector<std::string> scrip
 	init();
 	for (int i=0; i<numScripts; i++)
 	{
-		std::cout << scripts[i] << std::endl;
+		std::cout << "Init with script: " << scripts[i] << std::endl;
 	}
 	addPipelines(numScripts, scripts);
 
@@ -212,7 +212,6 @@ inline int CatalystAdaptor::addPipelines(int numScripts, std::vector<std::string
 		}
 
 
-		std::cout << "before initialize" << scripts[i] <<std::endl;
 		vtkNew<vtkCPPythonScriptPipeline> pipeline;
 		if (pipeline->Initialize(scripts[i].c_str()) )
 		{

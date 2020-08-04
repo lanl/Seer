@@ -1,11 +1,11 @@
 {
     "mochi-database": {
-        "address": "ofi+tcp://192.168.101.190",
+        "address": "ofi+tcp://192.168.101.188",
         "port": ":1234",
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo_test5",
+        "name": "foo_struc_6",
         "polling-rate": 1
     },
     "log_prefix": "struc_test",
@@ -16,10 +16,5 @@
     ],
     "catalyst-scripts": [
         "/projects/insituperf/Seer/scripts/catalyst/write_vtm.py"
-    ],
-    "events-to-record": [
-        "loop-time",
-        "comp-time"
-    ],
-    "vocab": "/projects/insituperf/Seer/Seer_Utils/vocab.json"
+    ]
 }

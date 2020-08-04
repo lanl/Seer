@@ -306,7 +306,7 @@ inline std::string MochiInterface::getValue(std::string key)
 inline int MochiInterface::getValue(std::string key, std::string &value)
 {
 	Timer clock;
-	clock.start("getValue");
+  clock.start("getValue");
 
 	size_t max_value_size = 2048;
 	size_t value_size = max_value_size;
@@ -325,6 +325,7 @@ inline int MochiInterface::getValue(std::string key, std::string &value)
 
 	std::string s(v.begin(), v.begin()+value_size);
 	value = s;
+  clock.stop("getValue");
 
 	log << "MochiInterface getValue took: " << clock.getDuration("getValue") << " s" << std::endl;
 

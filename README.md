@@ -26,22 +26,21 @@ packages:
 
 ~~~bash
 spack install openmpi
-spack install cmake
 
 # Mochi
 git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
 spack repo add sds-repo
 spack install margo
-spack install sdskeyval+bdb+leveldb
+spack install sdskeyval+leveldb
 spack install py-sdskv
 
 # To install Jupyter notebook (for the client)
-#   load the python associated with the mochi python 
+#   load the python associated with the mochi python
 spack load -r py-sdskv  
 
 #   install jupyter for that python
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python get-pip.py 
+python get-pip.py
 python -m pip install jupyter
 
 # ParaView
@@ -147,7 +146,7 @@ jupyter-notebook --no-browser --port=8897 --ip=0.0.0.0
 ~~~bash
 # Tunnel to the server
 #   ssh -N -f -L <port_number>:<host_name>:<port_number> username@cluster 
-ssh -N -f -L 8898:cn36:8898 pascalgrosset@darwin-fe
+ssh -N -f -L 8897:cn37:8897 pascalgrosset@darwin-fe
 ~~~
 
 In the browser:

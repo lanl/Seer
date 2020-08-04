@@ -103,23 +103,21 @@ int main(int argc, char *argv[])
 		if (insitu.isCatalystOn())
 		{
 			insitu.cat.coProcess(temp.getGrid(), t / 1.0, t, t == (numTimesteps - 1));
-			//std::this_thread::sleep_for(std::chrono::milliseconds(3000));		// uncomment  for Catalyst LIVE
 		}
 		//else
 		//	temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
 	 
 	  #elif SENSEI_ENABLED
-
 		if (SenseiOn)
 		{
 			Seer::senseiAnalyze("mesh", temp.getGrid(), t, t/1.0);
 		}
 		else
 			temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
-
 	  #else
 		//temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
       #endif 
+
 
 		insitu.timestepExecute(t);
 
