@@ -6,7 +6,7 @@
 namespace Seer  
 { 
 
-std::vector <std::string> arguments;
+extern std::vector <std::string> arguments;
 
 inline int parseArgs(int numArgs, char *argv[])
 {

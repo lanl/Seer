@@ -15,6 +15,14 @@
 #include "seerInSituWrap.hpp"
 
 
+#ifdef CATALYST_ENABLED
+	#include "catalystAdaptor.h"
+#endif
+
+  std::stringstream Seer::log;
+  std::string Seer::logName = "";
+
+
 
 int fib(int n) 
 { 
@@ -29,9 +37,12 @@ int main(int argc, char *argv[])
 	//std::stringstream msgLog;
 
 	int myRank, numRanks, threadSupport;
+	char processor_name[256];
+	int processor_name_len;
 	MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &threadSupport);
 	MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+	MPI_Get_processor_name(processor_name, &processor_name_len);
 
 	int numPoints = 100;
 	int numTimesteps = 500;
@@ -42,9 +53,6 @@ int main(int argc, char *argv[])
 	Seer::SeerInsituWrap insitu;
 	insitu.init(argc, argv, myRank, numRanks);
 
-	char processor_name[256];
-	int processor_name_len;
-	MPI_Get_processor_name(processor_name, &processor_name_len);
 
 	Seer::Timer clock;
 

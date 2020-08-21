@@ -5,14 +5,13 @@
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo_struc_6",
+        "name": "foo_struc_isav_test_5",
         "polling-rate": 1
     },
     "log_prefix": "struc_test",
     "mpi-profiling": true,
     "papi_counters": [
-        "PAPI_BR_UCN",
-        "PAPI_VEC_SP"
+        "PAPI_L1_ICM"
     ],
     "catalyst-scripts": [
         "/projects/insituperf/Seer/scripts/catalyst/write_vtm.py"

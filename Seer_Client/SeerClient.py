@@ -108,6 +108,17 @@ class SeerClient:
                     my_keys.append(k)
     
         return my_keys
+    
+    
+    def get_value_at_ts(self, key, timestep):
+        num_ranks = self.get_val("numRanks")
+        values = []
+        for r in range( int(num_ranks) ):
+            temp_key = self.hash_val + "@" + key + "#" + str(r) + "|" + str(timestep)
+            values.append( self.get_val(temp_key) )
+        
+        return values
+            
        
  
     def set(self, key, value):

@@ -9,12 +9,14 @@
 
 #include "seerInSituWrap.hpp"
 
+
 #ifdef CATALYST_ENABLED
 	#include "catalystAdaptor.h"
-#elif SENSEI_ENABLED
-	#include "senseiBridge.h"
 #endif
 
+
+  std::stringstream Seer::log;
+  std::string Seer::logName = "";
 
 //#ifdef CATALYST_ENABLED
 //	#include "catalystAdaptor.h"
@@ -50,21 +52,6 @@ int main(int argc, char *argv[])
 	extents[2] = 0; extents[3] = domains[1];
 	extents[3] = 0; extents[5] = domains[2];
 
-
-  #ifdef SENSEI_ENABLED
-
-	bool SenseiOn = false;
-
-	if (argc > 1)
-		SenseiOn = InWrap::checkSensei(argv[1]);
-
-	if (SenseiOn)
-	{
-		std::cout << "Sensei on" << std::endl;
-		Seer::senseiInitialize(MPI_COMM_WORLD, argv[2]);
-	}
-
-  #endif
 
 
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -106,22 +93,13 @@ int main(int argc, char *argv[])
 		}
 		//else
 		//	temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
-	 
-	  #elif SENSEI_ENABLED
-		if (SenseiOn)
-		{
-			Seer::senseiAnalyze("mesh", temp.getGrid(), t, t/1.0);
-		}
-		else
-			temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
-	  #else
-		//temp.writeParts(numRanks, myRank, myRank, "miniAppUns_" + std::to_string(t));
+	
       #endif 
 
 
 		insitu.timestepExecute(t);
 
-
+		Seer::writeLog( "logs/myLog_" + std::to_string(myRank), Seer::log.str());
 
 		if (myRank == 0)
 			std::cout << myRank << " ~ ts: " << t << std::endl;
