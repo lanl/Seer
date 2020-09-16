@@ -44,7 +44,7 @@ python get-pip.py
 python -m pip install jupyter
 
 # ParaView
-spack install paraview@5.7.0 +osmesa +python3
+spack install paraview@5.7.0 +osmesa +python3 ^hwloc@1.9
 
 # VTK (Optional for testing)
 spack install vtk #(spack install vtk ^hdf5+hl+mpi to bypass error)
