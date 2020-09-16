@@ -59,6 +59,40 @@ int main(int argc, char *argv[])
 	if (myRank == 0)
 		std::cout << numTimesteps << std::endl;
 
+
+	//
+	// Sim setup
+	int dimX, dimY, dimZ, dims[3];
+	dims[0] = dimX = 5; 
+	dims[1] = dimY = 7; 
+	dims[2] = dimZ = 9;
+
+	int numPoints = 0;
+	int numCells = (dimX-1) * (dimY-1) * (dimZ-1);
+
+	std::vector<double> points;
+	for (int _z = 0; _z < dimZ; _z++)
+		for (int _y = 0; _y < dimY; _y++)
+			for (int _x = 0; _x < dimX; _x++)
+			{
+				double pnt[3];
+				pnt[0] = _x + myRank;	pnt[1] = _y;	pnt[2] = _z;
+
+				points.push_back(pnt[0]);
+				points.push_back(pnt[1]);
+				points.push_back(pnt[2]);
+
+				numPoints++;
+
+				//msgLog << "Point: " << pnt[0] << ", " << pnt[1] << ", " << pnt[2] << std::endl;
+			}
+
+	// explosion
+	float explosionX = 2.5;
+	float explosionY = 3;
+	float explosionZ = 4;
+	float explosionValue = 500;
+
 	MPI_Barrier(MPI_COMM_WORLD);
 
 
@@ -71,67 +105,46 @@ int main(int argc, char *argv[])
 
 		Seer::log << "\nTimestep: " << t << std::endl;
 
-		int dimX, dimY, dimZ, dims[3];
-		dims[0] = dimX = 2; 
-		dims[1] = dimY = 6; 
-		dims[2] = dimZ = 8;
-
-
-		std::vector<double> points;
-		int numPoints = 0;
-		int numCells = 35;
-
-		for (int _z = 0; _z < dimZ; _z++)
-			for (int _y = 0; _y < dimY; _y++)
-				for (int _x = 0; _x < dimX; _x++)
-				{
-					double pnt[3];
-					pnt[0] = _x + myRank;	pnt[1] = _y;	pnt[2] = _z;
-
-					points.push_back(pnt[0]);
-					points.push_back(pnt[1]);
-					points.push_back(pnt[2]);
-
-					numPoints++;
-
-					//msgLog << "Point: " << pnt[0] << ", " << pnt[1] << ", " << pnt[2] << std::endl;
-				}
-
-
-
 		// vertex centered -  scalar
 		double *pointData = new double[numPoints];
 		for (int i = 0; i < numPoints ; i++)
 			pointData[i] = myRank + t * 0.01;
 
-
 		// cell centered - scalar
 		double *cellData = new double[numCells];
 		double *cellDataFact = new double[numCells];
 		int *cellRankData = new int[numCells];
+		double *explosionValue = new double[numCells];
 
 	  clock.start("factComputation");
 
 		for (int i = 0; i < numCells ; i++)
 		{
-
 			// Do some computatiton
 			int number = rand()%40 + 1;
-			int f = fib( number);
+			int f = fib( number*rank );
 			cellDataFact[i] = f/1000.0;
 		
-
 			cellData[i] = myRank + t * 0.05;
 			cellRankData[i] = myRank;
 		}
 
+		int index = 0;
+		for (int _z = 0; _z < dimZ-1; _z++)
+			for (int _y = 0; _y < dimY-1; _y++)
+				for (int _x = 0; _x < dimX-1; _x++)
+				{
+					explosionValue[index] = explosionValue/distance(_x,_y,_z, explosionX, explosionY, explosionZ);
+				}
+		explosionValue--;
+
 	  clock.stop("factComputation");
+	  clock.stop("mainLoop");
 
 		Seer::log << "\nnumPoints: " << numPoints << " point data: " << myRank + t * 0.01 << std::endl;
 		Seer::log << "numCells: " << numCells << " cell data: " << myRank + t * 0.05 << std::endl;
 
-	  clock.stop("mainLoop");
-
+	  
 		if (insitu.isInsituOn())
 		{
 			MPI_Barrier(MPI_COMM_WORLD);
@@ -191,7 +204,6 @@ int main(int argc, char *argv[])
 
 		if (myRank == 0)
 			std::cout << "ts: " << t << std::endl;
-		
 	}
 
 	MPI_Finalize();
