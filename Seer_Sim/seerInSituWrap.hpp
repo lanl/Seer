@@ -30,8 +30,6 @@
 
 #ifdef CATALYST_ENABLED	
 	#include "utils/catalystAdaptor.h"
-#endif
-
 
 // VTK Helpers+++
 #include "vtkStructures/structuredGrid.h"
@@ -40,6 +38,7 @@
 #include "vtkStructures/polyData.h"
 #include "vtkDataStruct.h"
 
+#endif
 
 namespace Seer
 {
@@ -163,10 +162,10 @@ class SeerInsituWrap
 	int numTimesteps;
 	int currentTimestep;
 
-
+  #ifdef CATALYST_ENABLED	
 	// vtk data
 	VTKDataStruct *genericVTK;
-
+  #endif
 
 	// events and users
 	eventsUsers eventHash;
@@ -232,7 +231,9 @@ inline SeerInsituWrap::SeerInsituWrap()
 	// InSitu toolkits
 	sensei_on = false;
 	catalyst_on = false;
+  #ifdef CATALYST_ENABLED
 	catalyst_scripts_changed = false;
+  #endif
 	veloc_on = false;
 
 	// Mochi
@@ -337,12 +338,14 @@ inline int SeerInsituWrap::cleanup()
 
 inline void SeerInsituWrap::createVTKStruct(std::string strucName)
 {
+  #ifdef CATALYST_ENABLED	
 	if (strucName == "structured_grid")
 		genericVTK = new StructuredGrid();	
 	else if (strucName == "unstructured_grid")
 		genericVTK = new UnstructuredGrid();
 	else if (strucName == "rectilinear_grid")
 		genericVTK = new RectilinearGrid();
+  #endif
 }
 
 

@@ -15,12 +15,9 @@
 #endif
 
 
-  std::stringstream Seer::log;
-  std::string Seer::logName = "";
+std::stringstream Seer::log;
+std::string Seer::logName = "";
 
-//#ifdef CATALYST_ENABLED
-//	#include "catalystAdaptor.h"
-//#endif
 
 
 int main(int argc, char *argv[])
@@ -76,7 +73,7 @@ int main(int argc, char *argv[])
 		}
 
 
-
+	#ifdef  CATALYST_ENABLED
 		Seer::UnstructuredGrid temp;
 		temp.setPoints(&points[0], numPoints, VTK_VERTEX);
 		temp.addScalarData("pressure", numPoints, data);
@@ -86,7 +83,7 @@ int main(int argc, char *argv[])
 		temp.addFieldData("numRank", &numRanks);
 
 
-	  #ifdef  CATALYST_ENABLED
+	  
 		if (insitu.isCatalystOn())
 		{
 			insitu.cat.coProcess(temp.getGrid(), t / 1.0, t, t == (numTimesteps - 1));

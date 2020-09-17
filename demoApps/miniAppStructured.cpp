@@ -10,6 +10,7 @@
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
 #include <mpi.h>
+#include <math.h>
 
 #include "timer.hpp"
 #include "seerInSituWrap.hpp"
@@ -32,6 +33,11 @@ int fib(int n)
 } 
 
 
+double distance(float x1, float y1, float z1, float x2, float y2, float z2)
+{
+	return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2) );
+}
+
 int main(int argc, char *argv[])
 {
 	//std::stringstream msgLog;
@@ -44,7 +50,6 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 	MPI_Get_processor_name(processor_name, &processor_name_len);
 
-	int numPoints = 100;
 	int numTimesteps = 500;
 
 	srand(time(NULL) + myRank);
@@ -114,7 +119,7 @@ int main(int argc, char *argv[])
 		double *cellData = new double[numCells];
 		double *cellDataFact = new double[numCells];
 		int *cellRankData = new int[numCells];
-		double *explosionValue = new double[numCells];
+		double *explosionValues = new double[numCells];
 
 	  clock.start("factComputation");
 
@@ -122,7 +127,7 @@ int main(int argc, char *argv[])
 		{
 			// Do some computatiton
 			int number = rand()%40 + 1;
-			int f = fib( number*rank );
+			int f = fib( number*myRank );
 			cellDataFact[i] = f/1000.0;
 		
 			cellData[i] = myRank + t * 0.05;
@@ -134,7 +139,7 @@ int main(int argc, char *argv[])
 			for (int _y = 0; _y < dimY-1; _y++)
 				for (int _x = 0; _x < dimX-1; _x++)
 				{
-					explosionValue[index] = explosionValue/distance(_x,_y,_z, explosionX, explosionY, explosionZ);
+					explosionValues[index] = explosionValue/distance(_x,_y,_z, explosionX, explosionY, explosionZ);
 				}
 		explosionValue--;
 
@@ -163,7 +168,7 @@ int main(int argc, char *argv[])
 			tempVector[1] = myRank+0.2;
 			tempVector[2] = myRank+0.4;
 
-
+		  #ifdef  CATALYST_ENABLED
 			Seer::StructuredGrid temp;
 			{
 				temp.setWholeExtents(0,numRanks, 0,dimY-1, 0,dimZ-1);
@@ -185,7 +190,7 @@ int main(int argc, char *argv[])
 				temp.addScalarCellData("_rank", numCells, cellRankData);
 			}
 
-		  #ifdef  CATALYST_ENABLED
+		  
 			if (insitu.isCatalystOn())
 			{
 				insitu.cat.coProcess(temp.getGrid(), t / 1.0, t, t == (numTimesteps - 1));
