@@ -1,5 +1,6 @@
 # Seer
 
+![Logo](Seer_Logo.png?raw=true "Logo")
 Seer is a lightweight insitu wrapper library adding insitu capabilities to simulations.
 
 
