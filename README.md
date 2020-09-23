@@ -1,5 +1,3 @@
-# Seer
-
 <img src="Seer_Logo.png" width="200">
 
 Seer is a lightweight insitu wrapper library adding insitu capabilities to simulations.
