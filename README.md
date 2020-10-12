@@ -107,6 +107,7 @@ sdskv-server-daemon na+sm foo:ldb -f address &
 # load whatever modules the sim needs
 
 # load Seer insitu stuff as follows 
+spack load openmpi
 spack load -r margo
 spack load -r sdskeyval
 
