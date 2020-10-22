@@ -179,6 +179,11 @@ Scripts for launching sims are located in the script folder:
 * Turn them on (if disabled) using: sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'
 
 
+# Citing Seer
+Pascal Grosset, Jesus Pulido, James Ahrens, "Personalized In Situ Steering for Analysis and Visualization",  In Proceedings of the Workshop on In Situ Infrastructures for Enabling Extreme-Scale Analysis and Visualization (ISAV '20). Association for Computing Machinery, New York, NY, USA. DOI:https://doi.org/10.1145/3426462.3426463
+
+The Seer paper is available at: https://permalink.lanl.gov/object/tr?what=info:lanl-repo/lareport/LA-UR-20-27966
+
 # Copyright
 
 © (or copyright) 2019. Triad National Security, LLC. All rights reserved.
