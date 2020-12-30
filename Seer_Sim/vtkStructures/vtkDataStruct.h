@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-#include <vtkSmartPointer.h>
 #include <vtkDataSet.h>
+#include <vtkSmartPointer.h>
 
 
 namespace Seer

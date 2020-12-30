@@ -2,13 +2,26 @@ cmake_minimum_required(VERSION 3.10)
 
 project(Seer VERSION "0.3")
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 include_directories(${CMAKE_SOURCE_DIR}/Seer_Sim)
 include_directories(${CMAKE_SOURCE_DIR}/Seer_Sim/utils)
 include_directories(${CMAKE_SOURCE_DIR}/Seer_Sim/vtkStructures)
 include_directories(${CMAKE_SOURCE_DIR}/Seer_Utils)
 
 set (SEER_LIBS "")
+
+
+# MPI
+find_package(MPI)
+if (MPI_FOUND)
+	include_directories(${MPI_INCLUDE_PATH})
+	set(CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS})
+	set(CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_LINK_FLAGS})
+	SET(CMAKE_C_COMPILER mpicc)
+	SET(CMAKE_CXX_COMPILER mpicxx)
+else()
+	message(FATAL_ERROR "Could not find any MPI installation!!!") 
+endif()
 
 
 # link shared lib with full rpath
@@ -31,7 +44,7 @@ set (BUILD_SHARED_LIBS "OFF" CACHE BOOL "Build a shared library")
 # Catalyst
 option(ENABLE_CATALYST "Link the sim with Catalyst for in situ" OFF)
 if (ENABLE_CATALYST)
-message("ENABLE_CATALYST")
+	message("ENABLE_CATALYST")
   	find_package(ParaView REQUIRED)
 
   	if (NOT TARGET ParaView::PythonCatalyst)
@@ -59,8 +72,13 @@ message("ENABLE_CATALYST")
 
 	add_definitions(-DCATALYST_ENABLED)
 	message("ENABLE_CATALYST!!!")
-
-	
+else ()
+	find_package(VTK)
+	if (NOT VTK_FOUND)
+		message(STATUS "VTK Not found!")
+	else()
+		add_definitions(-DVTK_ENABLED)
+	endif()
 endif()
 
 
@@ -88,8 +106,6 @@ if (ENABLE_SENSEI)
 endif()
 
 
-
-
 # PAPI
 option(USE_PAPI "Use PAPI for profiling" OFF)
 if (USE_PAPI)
@@ -99,6 +115,14 @@ if (USE_PAPI)
   	add_definitions(-DPAPI_ENABLED)
 endif()
 
+
+# TAU
+option(USE_TAU_MOCHI "Use TAU_MOCHI" OFF)
+if (USE_TAU_MOCHI)
+	 add_definitions(-DTAU_MOCHI_ENABLED)
+	SET(CMAKE_C_COMPILER tau_cc.sh)
+	SET(CMAKE_CXX_COMPILER tau_cxx.sh)
+endif()
 
 
 ## Not Optional!!!
@@ -122,17 +146,8 @@ set(MOCHI_ENABLED ON)
 
 
 
-# MPI
-find_package(MPI)
-if (MPI_FOUND)
-	include_directories(${MPI_INCLUDE_PATH})
-	set(CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS})
-	set(CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_LINK_FLAGS})
-	SET(CMAKE_C_COMPILER mpicc)
-	SET(CMAKE_CXX_COMPILER mpicxx)
-else()
-	message(FATAL_ERROR "Could not find any MPI installation!!!") 
-endif()
+
+
 
 # OpenMP
 # find_package(OpenMP)

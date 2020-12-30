@@ -67,3 +67,9 @@ export PATH=/home/pascal/software/tau-2.27/install/x86_64/bin:$PATH
 export LD_LIBRARY_PATH=/home/pascal/software/tau-2.27/install/x86_64/lib:$LD_LIBRARY_PATH  
 export export TAU_MAKEFILE=/home/pascal/software/tau-2.27/install/x86_64/lib/Makefile.tau-papi-mpi-pdt  
 export LD_LIBRARY_PATH=/home/pascal/software/pdtoolkit-3.25/install/x86_64/lib:$LD_LIBRARY_PATH  
+
+
+
+export TAU_PLUGINS=/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-python-pdt
+export TAU_PLUGINS=libTAU-mochi-plugin.so\("/home/pascalgrosset/projects/Seer/build/sdsv.add2, 1, foo2"\)
+sdskv-server-daemon na+sm foo2:ldb -f sdsv.add2 &

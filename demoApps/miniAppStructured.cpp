@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	MPI_Get_processor_name(processor_name, &processor_name_len);
 
 	int numPoints = 100;
-	int numTimesteps = 500;
+	int numTimesteps = 5;//500;
 
 	srand(time(NULL) + myRank);
 

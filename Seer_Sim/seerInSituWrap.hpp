@@ -115,6 +115,7 @@ struct eventsUsers
 
 
 
+
 class SeerInsituWrap
 {
 	nlohmann::json jsonInputConfig;	// config file
@@ -208,8 +209,19 @@ class SeerInsituWrap
 
   	int init(int argc, char* argv[], int myRank, int numRanks);
 	int init(int _myRank, int _numRanks, MPI_Comm _comm, std::string insituFile);
+
+
+	int addGlobalKeyValue(std::string key, std::string value);
+
+
+	void storeVariables(std::vector<std::string> vars);
+	
+	template <class T>
+	void storePointValue(std::string scalarName, std::string dataType, size_t n, T *vals, float samplingRate, int rank, int ts);
+
   	int timestepInit();
   	int timestepExecute(int ts);
+
 
   	int isInsituOn(){ return insitu_on; }
 	int isMochiOn(){ return mochi_on; }
@@ -217,6 +229,8 @@ class SeerInsituWrap
   	int isCatalystOn(){ return catalyst_on; }
   	int isSenseiOn(){ return sensei_on; }
   	int isVeloCOn(){ return veloc_on; }
+
+	
 };
 
 
@@ -231,9 +245,12 @@ inline SeerInsituWrap::SeerInsituWrap()
 
 	// InSitu toolkits
 	sensei_on = false;
+	veloc_on = false;
+  #ifdef CATALYST_ENABLED
 	catalyst_on = false;
 	catalyst_scripts_changed = false;
-	veloc_on = false;
+  #endif
+	
 
 	// Mochi
 	mochi_on = false;
@@ -264,6 +281,58 @@ inline SeerInsituWrap::~SeerInsituWrap()
 
 
 
+inline int SeerInsituWrap::addGlobalKeyValue(std::string key, std::string value)
+{
+	if (mochi_on && myRank == 0)
+	{
+		//mochi.putKeyValue("00000000@" + key, value);
+		mochi.putKeyValue(key, value);
+
+		log << "added " << key << ": " << value << " to mochi" << std::endl;
+
+		return 1;
+	}
+	else
+		if (!mochi_on && myRank == 0)
+		{
+			std::cout << "Mochi is not on!" << std::endl;
+			log << "Mochi is not on!" << std::endl;
+			return -1;
+		}
+
+	return 0;
+}
+
+
+
+inline void SeerInsituWrap::storeVariables(std::vector<std::string> vars)
+{
+	std::string concatVars = "";
+	for (int i=0; i<vars.size()-1; i++)
+		concatVars += vars[i] + ",";
+
+	concatVars += vars[vars.size()-1];
+
+
+	addGlobalKeyValue("sim_vars", concatVars);
+}
+
+
+template <class T>
+inline void SeerInsituWrap::storePointValue(std::string scalarName, std::string dataType, size_t n, T *vals, float samplingRate, int rank, int ts)
+{
+	std::string key = scalarName + "#" + std::to_string(rank) + "|" + std::to_string(ts);
+
+	T *dataOut;
+	randomSamplePoints(n, samplingRate, vals, dataOut);
+	std::string value = "point_" + dataType + "_" + serializeArray(samplingRate*n, dataOut);
+
+	if (mochi_on)
+		mochi.putKeyValue(key, value);
+}
+
+
+
 inline int SeerInsituWrap::getEvent(std::string name, std::string &value)
 {
 	if (!insitu_on)
@@ -278,6 +347,7 @@ inline int SeerInsituWrap::getEvent(std::string name, std::string &value)
 
 	return 0;
 }
+
 
 inline int SeerInsituWrap::recordEvent(std::string name, std::string value)
 {
@@ -410,8 +480,9 @@ inline int SeerInsituWrap::initInSitu(int _myRank, int _numRanks)
 
 			if ( jsonInputConfig["mochi-database"].find("address") != jsonInputConfig["mochi-database"].end() )
 			{
-				mochi_address = jsonInputConfig["mochi-database"]["address"];
-				mochi_address += jsonInputConfig["mochi-database"]["port"];
+				std::string _mochi_address = jsonInputConfig["mochi-database"]["address"];
+				std::string _mochi_port = jsonInputConfig["mochi-database"]["port"];
+				mochi_address = _mochi_address + ":" + _mochi_port;
 			}
 
 			if ( jsonInputConfig["mochi-database"].find("multiplex") != jsonInputConfig["mochi-database"].end() )
@@ -690,6 +761,43 @@ inline void SeerInsituWrap::readFromMochi()
 		}
 	  clock.stop("sim-find");
 
+
+	  clock.start("sim-var-find");
+	  	// Simulation events
+		{
+			// Add Sim events like timers
+			{
+				auto foundKeyVals = getMochiKeys(key_hash + "@SIM_VAR:ADD", userKeys);
+
+				for (int i=0; i<foundKeyVals.size(); i++)
+				{
+					std::cout << "SIM_VAR:Adding event " << foundKeyVals[i].second << " ... " << std::endl;
+
+					simEvents.insert( std::pair<std::string,std::string>(foundKeyVals[i].second,"") );
+					eventHash.insertEventHash( foundKeyVals[i].second, key_hash );
+					processedKeys.push_back( foundKeyVals[i].first );
+
+					log  << " SIM:Adding event" << foundKeyVals[i].second << std::endl;
+					std::cout << "SIM:Added event " << foundKeyVals[i].second << std::endl;
+				}
+			}
+
+			// Remove sim events like timers
+			{
+				auto foundKeyVals = getMochiKeys(key_hash + "@SIM_VAR:DEL", userKeys);
+
+				for (int i=0; i<foundKeyVals.size(); i++)
+				{
+					simEvents.erase( foundKeyVals[i].second );
+					eventHash.removeEventHash( foundKeyVals[i].second, key_hash );
+					processedKeys.push_back( foundKeyVals[i].first );
+
+					log  << " SIM_VAR:Removed event" << foundKeyVals[i].second << std::endl;
+				}
+			}
+		}
+	  clock.stop("sim-var-find");
+
 	  	//
 		// End of Reading keys!
 
@@ -728,7 +836,6 @@ inline void SeerInsituWrap::readFromMochi()
 
 
 
-
 //
 // Core Methods
 
@@ -743,8 +850,12 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 	if (!parseConfigFile(argc, argv))
 		return 0;
 
+	std::cout << _myRank << " ~ parseConfigFile .... " << std::endl; 
+
 	if (!initInSitu( _myRank, _numRanks))
 		return 0;
+
+	std::cout << _myRank << " ~ initInSitu .... " << std::endl; 
   
   clock.stop("initialization");
 
@@ -753,15 +864,7 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 
 	//
 	// Put a value in the keyval storage for testing purposes
-	if (myRank == 0)
-	{
-		std::string key   = "numRanks";
-		std::string value = std::to_string( numRanks );
-		//mochi.putKeyValue("00000000@" + key, value);
-		mochi.putKeyValue(key, value);
-
-		log << "added numRanks to mochi" << std::endl;
-	}
+	addGlobalKeyValue( "numRanks", std::to_string(numRanks) );
 
 
 	//
@@ -847,6 +950,7 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 
 	return 1;
 }
+
 
 
 inline int SeerInsituWrap::init(int _myRank, int _numRanks, MPI_Comm _comm, std::string insituFile)
@@ -877,16 +981,8 @@ inline int SeerInsituWrap::init(int _myRank, int _numRanks, MPI_Comm _comm, std:
 
 	//
 	// Put a value in the keyval storage for testing purposes
-	if (myRank == 0)
-	{
-		std::string key   = "numRanks";
-		std::string value = std::to_string( numRanks );
-		//mochi.putKeyValue("00000000@" + key, value);
-		mochi.putKeyValue(key, value);
-
-		log << "added numRanks to mochi" << std::endl;
-	}
-
+	addGlobalKeyValue( "numRanks", std::to_string( numRanks ) );
+	
 
 	std::cout << _myRank << " ~ !!!!!!insitu initialized" << std::endl; 
 
@@ -976,6 +1072,7 @@ inline int SeerInsituWrap::init(int _myRank, int _numRanks, MPI_Comm _comm, std:
 }
 
 
+
 inline int SeerInsituWrap::timestepInit()
 {
 	if (!insitu_on)
@@ -1004,6 +1101,7 @@ inline int SeerInsituWrap::timestepInit()
 
 	return 1;
 }
+
 
 
 inline int SeerInsituWrap::timestepExecute(int ts)
@@ -1085,17 +1183,7 @@ inline int SeerInsituWrap::timestepExecute(int ts)
 			log << "added to mochi: " << *uh << "@" << key << ":" << value << std::endl;
 		}
 	}
-
-
-
-	if (mochi_on && myRank == 0)
-	{
-		std::string key   = "current_timestep";
-    	std::string value = std::to_string( ts );
-		//mochi.putKeyValue("00000000@" + key, value);
-		mochi.putKeyValue(key, value);
-		log << "added to mochi: " << "00000000@" << key << ":" << value << std::endl;
-	}
+	addGlobalKeyValue("current_timestep", std::to_string( ts ) );
 
   clock.stop("mochi_put_data");
 

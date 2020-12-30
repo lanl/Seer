@@ -6,6 +6,9 @@
 #include <chrono>
 #include <thread>
 
+#ifdef TAU_MOCHI_ENABLED
+#include <Profile/Profiler.h>
+#endif
 
 #include "seerInSituWrap.hpp"
 
@@ -15,12 +18,18 @@
 #endif
 
 
-  std::stringstream Seer::log;
-  std::string Seer::logName = "";
+std::stringstream Seer::log;
+std::string Seer::logName = "";
+
 
 //#ifdef CATALYST_ENABLED
 //	#include "catalystAdaptor.h"
 //#endif
+
+
+#ifdef TAU_MOCHI_ENABLED
+int Tau_dump(void);
+#endif
 
 
 int main(int argc, char *argv[])
@@ -33,9 +42,13 @@ int main(int argc, char *argv[])
 	int numPoints = 100;
 	int numTimesteps = 300;
 
+	std::cout << "one" << std::endl;
+
 
 	Seer::SeerInsituWrap insitu;
 	insitu.init(argc, argv, myRank, numRanks);
+
+	std::cout << "two" << std::endl;
 
 
 	int window = 10;
@@ -53,8 +66,12 @@ int main(int argc, char *argv[])
 	extents[3] = 0; extents[5] = domains[2];
 
 
+	insitu.storeVariables( std::vector<std::string>{"pressure"} );
+
 
 	MPI_Barrier(MPI_COMM_WORLD);
+	std::cout << "three" << std::endl;
+
 
 	for (int t = 0; t < numTimesteps; t++)
 	{
@@ -103,6 +120,10 @@ int main(int argc, char *argv[])
 
 		if (myRank == 0)
 			std::cout << myRank << " ~ ts: " << t << std::endl;
+
+		#ifdef TAU_MOCHI_ENABLED
+		Tau_dump();
+		#endif
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 		MPI_Barrier(MPI_COMM_WORLD);

@@ -2,14 +2,14 @@
     "mochi": true,
     "mochi-database": 
     {
-        "address": "na+sm://3156/0",
+        "address": "na+sm://270239/0",
         "port": "",
         "conn-type": "na+sm",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo"
+        "name": "foo2"
     },
-
+    
 
     "mpi-profiling": true,
 

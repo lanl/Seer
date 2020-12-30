@@ -5,8 +5,9 @@ from pymargo.core import Engine
 from pysdskv.client import *
 import matplotlib.pyplot as plt
 import numpy as np
-import random 
-
+import random
+import builtins
+import k3d
 
 
 class SeerClient:
@@ -49,10 +50,17 @@ class SeerClient:
         temp_str = str(hash_object.hexdigest())
         return ( temp_str[0:8] )
 
+    def __convert(self, typename, value):
+        return getattr(builtins, typename)(value)
+
 
     # Some Utility functions
     def put_keyval(self, key, val):
         self.db.put(key, val)
+
+
+    def get_db(self):
+        return self.db
 
 
     def del_key(self, key):
@@ -82,6 +90,31 @@ class SeerClient:
         self.client.shutdown_service(self.addr)
         
   
+
+    def deserializeVar(key, value):
+        # Format:
+        # key ::= <ts>_<rank>_<variable_name>
+        # value ::= "grid"|"point"_<data-type>_..,..,..,..
+        #    <topology> ::= # | dim_x,dim_y,dim_z@pos_x,pos_y,pos_z
+
+        dict = {}
+        
+        # parse key
+        data = key.split('_')
+        dict['var'] = data[2]
+        
+        #parse value
+        data = value.split('_')
+        dict['topo'] = data[0]
+        
+        print(data)
+        vals = data[2].split(',')
+        flVal = [convert(data[1],i) for i in vals]
+        dict['vals'] = flVal
+        
+        return dict
+
+
     
     # User Operations
     def list_keys(self):
@@ -165,6 +198,7 @@ class SeerClient:
         # Delete keys
         for k in key_list:              # delete keys that have been added to db
             del self.command_dic[k]
+
 
 
 

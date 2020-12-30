@@ -11,6 +11,8 @@ Seer is a lightweight insitu wrapper library adding insitu capabilities to simul
 * Mochi
 * Paraview Catalyst
 
+sdskv-server-daemon ofi+tcp://130.55.2.243:1234 foo_test5:ldb -f sdsv.add5 &
+sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test1:ldb &
 
 ## Environment Setup
 
@@ -30,13 +32,13 @@ spack install openmpi
 # Mochi
 git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
 spack repo add sds-repo
-spack install margo
-spack install sdskeyval+leveldb
-spack install py-sdskv
+spack install mochi-margo
+spack install mochi-sdskv+leveldb
+spack install py-mochi-sdskv
 
 # To install Jupyter notebook (for the client)
 #   load the python associated with the mochi python
-spack load -r py-sdskv  
+spack load -r py-mochi-sdskv  
 
 #   install jupyter for that python
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
@@ -51,6 +53,13 @@ spack install vtk #(spack install vtk ^hdf5+hl+mpi to bypass error)
 
 # Papi (usually already on the server and doesn't need install)
 spack install papi
+
+
+# TAU
+git clone https://github.com/UO-OACISS/tau2.git
+cd tau2
+./configure -mpi -prefix=<tau_folder> -mochi
+
 ~~~
 
 
@@ -196,3 +205,58 @@ Security Administration. The Government is granted for itself and others acting 
 nonexclusive, paid-up, irrevocable worldwide license in this material to reproduce, prepare
 derivative works, distribute copies to the public, perform publicly and display publicly, and to permit
 others to do so.
+
+
+
+export TAU_MAKEFILE=/home/pascalgrosset/software/tau2/x86_64/lib/Makefile.tau-papi-mpi-pdt
+export TAU_OPTIONS='-optShared -optVerbose'
+
+
+spack load -r papi
+spack load -r py-mochi-sdskv
+spack load -r /gydpego #mochi-margo
+
+
+
+export LD_LIBRARY_PATH=/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-pdt:$LD_LIBRARY_PATH
+export TAU_PLUGINS_PATH=/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-pdt
+export TAU_PLUGINS=libTAU-mochi-plugin.so\("/home/pascalgrosset/projects/Seer/build/sdsv.addr1, 1, foo_test_1"\)
+
+#sdskv-server-daemon ofi+tcp://130.55.2.139:1234 foo_test_1:ldb
+# "file-address": "ofi+tcp;ofi_rxm://130.55.2.107:35205",
+# sdskv-server-daemon ofi+tcp://130.55.2.107:1234 foo_test_1:ldb
+sdskv-server-daemon ofi+tcp:// foo_test_1 -f sdsv.addr1 &
+mpirun -np 4 tau_exec -T mpi demoApps/miniAppUnstruc --insitu ../inputs/input-test-unstructured.json
+
+
+TAU: Failed to retrieve TAU_PLUGIN_INIT_FUNC from plugin libTAU-mochi-plugin.so with error:/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-python-pdt/libTAU-mochi-plugin.so: undefined symbol: Tau_plugin_init_func
+TAU: Failed to retrieve TAU_PLUGIN_INIT_FUNC from plugin libTAU-mochi-plugin.so with error:/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-python-pdt/libTAU-mochi-plugin.so: undefined symbol: Tau_plugin_init_func
+TAU INIT: Error initializing the plugin system
+TAU INIT: Error initializing the plugin system
+TAU: Failed to retrieve TAU_PLUGIN_INIT_FUNC from plugin libTAU-mochi-plugin.so with error:/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-python-pdt/libTAU-mochi-plugin.so: undefined symbol: Tau_plugin_init_func
+TAU: Failed to retrieve TAU_PLUGIN_INIT_FUNC from plugin libTAU-mochi-plugin.so with error:/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-python-pdt/libTAU-mochi-plugin.so: undefined symbol: Tau_plugin_init_func
+TAU INIT: Error initializing the plugin system
+TAU INIT: Error initializing the plugin system
+
+
+
+Running:
+spack load -r /3rskt6f #mochi-margo
+spack load -r /37r7upg #mochi-sdskv
+spack load papi
+
+export TAU_MAKEFILE=/home/pascalgrosset/software/tau2/x86_64/lib/Makefile.tau-papi-mpi-pdt
+export LD_LIBRARY_PATH=/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-pdt:$LD_LIBRARY_PATH
+export TAU_PLUGINS_PATH=/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-pdt
+export TAU_PLUGINS=libTAU-mochi-plugin.so\("/home/pascalgrosset/projects/Seer/build/sdsv.addr2, 1, foo_test_2"\)
+
+sdskv-server-daemon ofi+tcp:// foo_test_2:ldb -f sdsv.addr2 &       # Note: there is ":ldb" for the database name here but not in the previous line
+
+$ cat sdsv.addr2        # to find the address and port, and put them in ../inputs/input-test-unstructured.json
+
+mpirun -np 4 tau_exec -T mpi demoApps/miniAppUnstruc --insitu ../inputs/input-test-unstructured.json
+
+Client:
+spack load -r py-mochi-sdskv
+
+spack find --loaded to check what modules are loaded
