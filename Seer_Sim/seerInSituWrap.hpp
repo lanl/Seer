@@ -323,9 +323,17 @@ inline void SeerInsituWrap::storePointValue(std::string scalarName, std::string 
 {
 	std::string key = scalarName + "#" + std::to_string(rank) + "|" + std::to_string(ts);
 
-	T *dataOut;
-	randomSamplePoints(n, samplingRate, vals, dataOut);
-	std::string value = "point_" + dataType + "_" + serializeArray(samplingRate*n, dataOut);
+	std::cout << "key: " << key << std::endl;
+
+	std::vector<T> dataOut = randomSamplePoints(n, samplingRate, vals);
+
+	std::cout << "resampled!"  << std::endl;
+
+
+	std::string value = "point_" + dataType + "_" + serializeArray(samplingRate*n, &dataOut[0]);
+
+	std::cout << "value: " << value << std::endl;
+
 
 	if (mochi_on)
 		mochi.putKeyValue(key, value);

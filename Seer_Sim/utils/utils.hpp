@@ -19,9 +19,15 @@ inline bool fileExisits(std::string filename)
 template <class T>
 std::string serializeArray(size_t n, T *array)
 {
+    std::cout << "n: " << n << std::endl;
+
     std::stringstream ss;
     for (size_t i=0; i<n; i++)
+    {
         ss << array[i] << ",";
+        //std::cout << array[i] << std::endl;
+
+    }
 
     return ss.str();
 }
@@ -29,13 +35,17 @@ std::string serializeArray(size_t n, T *array)
 
 // Does a uniform sampling of particles
 template <class T>
-void randomSamplePoints(size_t n, float samplingRate, T *dataIn, T *dataOut)
+std::vector<T> randomSamplePoints(size_t n, float samplingRate, T *dataIn)
 {
+    std::cout << "n: " << n << ", samplingRate: " << samplingRate << std::endl;
 	// Reserve space for new output
 	size_t numSampledPoints = samplingRate * n;
-	dataOut = new T[numSampledPoints];
+    std::vector<T> dataOut;
+	//dataOut = new T[numSampledPoints];
 
     int sampleAt = n/numSampledPoints;
+
+    std::cout << "sampleAt: " << sampleAt << std::endl;
 
 	// Allocate data
 	size_t index = 0;
@@ -43,14 +53,25 @@ void randomSamplePoints(size_t n, float samplingRate, T *dataIn, T *dataOut)
 	{
 		if (i%sampleAt == 0)
 		{
-			dataOut[index] = dataIn[i];
+			//dataOut[index] = dataIn[i];
+            dataOut.push_back(dataIn[i]);
 			index++;
 
 			// Prevent overflow
-			if (index == numSampledPoints-1)
+			if (index == numSampledPoints)
 				break;
 		}
 	}
+    return dataOut;
+
+    // std::string outputStr = serializeArray(numSampledPoints, dataOut);
+
+    // // std::stringstream ss;
+    // // for (size_t i=0; i<numSampledPoints-1; i++)
+    // // {
+    // //     ss << dataOut[i] << ",";
+    // // }
+    // std::cout << outputStr << std::endl;
 }
 
 

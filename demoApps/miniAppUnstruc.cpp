@@ -102,6 +102,8 @@ int main(int argc, char *argv[])
 		temp.addFieldData("rank", &myRank);
 		temp.addFieldData("numRank", &numRanks);
 
+		insitu.storePointValue("pressure", "float", numPoints, data, 0.5, myRank, t);
+
 
 	  #ifdef  CATALYST_ENABLED
 		if (insitu.isCatalystOn())
