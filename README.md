@@ -128,6 +128,8 @@ demoApps/testMPI na+sm://9923/0 1 foo 10
 
 #### Remote (On Server)
 
+Get a compute node on the server
+
 ~~~bash
 # Load the modules
 spack load -r py-sdskv
