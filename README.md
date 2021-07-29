@@ -36,7 +36,7 @@ spack install py-mochi-sdskv
 
 # To install Jupyter notebook (for the client)
 #   load the python associated with the mochi python
-spack load -r py-sdskv  
+spack load -r py-mochi-sdskv  
 
 #   install jupyter for that python
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
