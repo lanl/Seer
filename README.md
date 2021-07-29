@@ -28,11 +28,11 @@ packages:
 spack install openmpi
 
 # Mochi
-git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
-spack repo add sds-repo
-spack install margo
-spack install sdskeyval+leveldb
-spack install py-sdskv
+git clone https://github.com/mochi-hpc/mochi-spack-packages
+spack repo add mochi-spack-packages
+spack install mochi-margo
+spack install mochi-sdskv+leveldb
+spack install py-mochi-sdskv
 
 # To install Jupyter notebook (for the client)
 #   load the python associated with the mochi python
