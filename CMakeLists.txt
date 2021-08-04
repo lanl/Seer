@@ -91,13 +91,28 @@ endif()
 
 
 # PAPI
+# option(USE_PAPI "Use PAPI for profiling" OFF)
+# if (USE_PAPI)
+# 	set (PAPI_INCLUDE_PATH ${PAPI_INCLUDE_PATH} CACHE PATH "Papi include directory")
+#   	set (PAPI_LIBRARY ${PAPI_LIBRARY} CACHE PATH "Papi library")
+#   	include_directories(${PAPI_INCLUDE_PATH})
+#   	add_definitions(-DPAPI_ENABLED)
+# endif()
+
 option(USE_PAPI "Use PAPI for profiling" OFF)
 if (USE_PAPI)
-	set (PAPI_INCLUDE_PATH ${PAPI_INCLUDE_PATH} CACHE PATH "Papi include directory")
-  	set (PAPI_LIBRARY ${PAPI_LIBRARY} CACHE PATH "Papi library")
-  	include_directories(${PAPI_INCLUDE_PATH})
-  	add_definitions(-DPAPI_ENABLED)
+	FIND_LIBRARY(PAPI_LIBRARIES NAMES papi)
+	FIND_PATH(PAPI_INCLUDE_DIRS NAMES papi.h)
+	INCLUDE(FindPackageHandleStandardArgs)
+	FIND_PACKAGE_HANDLE_STANDARD_ARGS(PAPI DEFAULT_MSG PAPI_LIBRARIES PAPI_INCLUDE_DIRS)
+	IF (PAPI_FOUND)
+		add_definitions(-DPAPI_ENABLED)
+		include_directories(${PAPI_INCLUDE_DIRS})
+		list( APPEND SEER_LIBS ${PAPI_LIBRARIES})
+
+	ENDIF(PAPI_FOUND)
 endif()
+
 
 
 
@@ -114,8 +129,12 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 include (xpkg-import)
 find_package (mercury CONFIG REQUIRED)
 include_directories(${MERCURY_INCLUDE_DIR})
+include_directories("/home/pascalgrosset/spack/opt/spack/linux-centos7-ivybridge/gcc-6.4.0/mochi-sdskv-0.1.14-tzahkondnienxqpqprqvtk7xemk64fir/include")
 xpkg_import_module (argobots REQUIRED argobots)
 xpkg_import_module (margo REQUIRED margo)
+xpkg_import_module (sdskv-client REQUIRED sdskv-client)
+xpkg_import_module (sdskv-server REQUIRED sdskv-server)
+
 
 add_definitions(-DMOCHI_ENABLED)
 set(MOCHI_ENABLED ON)

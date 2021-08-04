@@ -21,12 +21,16 @@ elseif (SENSEI_ENABLED)
   	#include(vtkMPI)
 
 else()
-message("NOTHING_ENABLED demoapps")
+	message("NOTHING_ENABLED demoapps")
 	add_executable(miniAppUnstruc miniAppUnstruc.cpp)
 	add_executable(miniAppStructured miniAppStructured.cpp)
 
-	target_link_libraries(miniAppStructured ${MPI_LIBRARIES} ${SEER_LIBS} papi margo sdskv-client)
-	target_link_libraries(miniAppUnstruc ${MPI_LIBRARIES} ${SEER_LIBS} papi margo sdskv-client)
+	target_link_libraries(miniAppStructured ${MPI_LIBRARIES} ${SEER_LIBS} margo sdskv-client)
+	target_link_libraries(miniAppUnstruc ${MPI_LIBRARIES} ${SEER_LIBS} margo sdskv-client)
+
+	
+	# target_link_libraries(miniAppStructured ${MPI_LIBRARIES} ${SEER_LIBS} papi margo sdskv-client)
+	# target_link_libraries(miniAppUnstruc ${MPI_LIBRARIES} ${SEER_LIBS} papi margo sdskv-client)
 endif()
 
 

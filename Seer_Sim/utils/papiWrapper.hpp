@@ -68,7 +68,10 @@ class PAPIWrapper
   	int readEvents();
   	int stopReading();
 
-	int getNumPapiCounters(){ return PAPI_num_counters(); }
+	//int getNumPapiCounters(){ return PAPI_num_counters(); }
+	int getNumPapiCounters(){ return PAPI_num_components(); }
+
+	
 
   	long long getHwdValue(int pos);
   	std::string getPapiEventName(int pos);
@@ -127,7 +130,7 @@ inline int PAPIWrapper::initPapi()
 	if (retval != PAPI_VER_CURRENT)
 		return handlePAPIError("PAPI_library_init");
 
-	if (PAPI_num_counters() < 1)
+	if (getNumPapiCounters() < 1)
 		return handlePAPIError("PAPI_num_counters");
 
 	retval = PAPI_multiplex_init();
