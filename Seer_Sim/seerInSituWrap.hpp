@@ -376,11 +376,14 @@ inline int SeerInsituWrap::initInSitu(int _myRank, int _numRanks)
 	log << "My rank: " << myRank << std::endl;
 	log << "Num ranks: " << numRanks << std::endl;
 
+	std::cout << "My rank: " << myRank << std::endl;
+	std::cout << "Num ranks: " << numRanks << std::endl;
 
 	//
 	// Find log
 	if ( jsonInputConfig.contains("log_prefix") )
 	{
+		
 		std::string log_prefix = jsonInputConfig["log_prefix"];
 		logName = logName + log_prefix + "_" + std::to_string(myRank);
 	}
@@ -403,13 +406,16 @@ inline int SeerInsituWrap::initInSitu(int _myRank, int _numRanks)
 	// Get mochi configuration and connect
 	if ( jsonInputConfig.contains("mochi-database") )
 	{
+		std::cout << myRank << "~" << "Mochi-on" << std::endl;
 		mochi_on = true;
 
 		// Read in mochi server parameters to connect to it
 		if ( jsonInputConfig.find("mochi-database") != jsonInputConfig.end() )
 		{
 			if ( jsonInputConfig["mochi-database"].find("name") != jsonInputConfig["mochi-database"].end() )
+			{
 				mochi_database = jsonInputConfig["mochi-database"]["name"];
+			}
 
 			if ( jsonInputConfig["mochi-database"].find("address") != jsonInputConfig["mochi-database"].end() )
 			{
@@ -418,21 +424,30 @@ inline int SeerInsituWrap::initInSitu(int _myRank, int _numRanks)
 			}
 
 			if ( jsonInputConfig["mochi-database"].find("multiplex") != jsonInputConfig["mochi-database"].end() )
+			{
 				mochi_multiplex = jsonInputConfig["mochi-database"]["multiplex"];
+			}
 		}
+
+		std::cout << myRank << "~" << "mochi_database: " << mochi_database << std::endl;
+		std::cout << myRank << "~" << "mochi_address: " << mochi_address << std::endl;
+		std::cout << myRank << "~" << "mochi_multiplex: " << mochi_multiplex << std::endl;
 
 		// If no mochi info is provided, turn it off!!!
 		if ((mochi_database == "" || mochi_address == "") || mochi_multiplex == 0)
 		{
 			mochi_on = false;
 			insitu_on = false;
-			std::cout << "Could not connect to Mochi, exiting ..." << std::endl;
+			std::cout << myRank << "~" << "Could not connect to Mochi, exiting ..." << std::endl;
 		}
 		else
 		{
 			log << "mochi on" << std::endl;
-			mochi.init(mochi_address, mochi_multiplex, mochi_database);
+			std::cout << myRank << "~" << "Connecting to mochi server ... " << std::endl;
+			mochi.init(myRank, mochi_address, mochi_multiplex, mochi_database);
 		}
+
+		std::cout << myRank << "~" << "Mochi-on-done" << std::endl;
 		
 	}
 
@@ -743,11 +758,17 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 
   clock.start("initialization");
 
+	std::cout << _myRank << "~" << "init..." << std::endl;
+
 	if (!parseConfigFile(argc, argv))
 		return 0;
 
+	std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiiiinit... 1" << std::endl;
+
 	if (!initInSitu( _myRank, _numRanks))
 		return 0;
+
+	std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiinit... 2" << std::endl;
   
   clock.stop("initialization");
 
@@ -758,6 +779,8 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 	// Put a value in the keyval storage for testing purposes
 	if (myRank == 0)
 	{
+		std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiiinit... 4" << std::endl;
+
 		std::string key   = "numRanks";
 		std::string value = std::to_string( numRanks );
 		//mochi.putKeyValue("00000000@" + key, value);
@@ -766,6 +789,7 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 		log << "added numRanks to mochi" << std::endl;
 	}
 
+	std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiiiiiiiinit... 5" << std::endl;
 
 	//
 	// Add different metrics, scripts, ... whatever the sim needs
@@ -802,6 +826,8 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 
   clock.stop("papi");
 
+  std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiiiiinit... 6" << std::endl;
+
 
 	// Catalyst
   clock.start("catalyst");
@@ -828,14 +854,19 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 
   clock.stop("catalyst");	
 
+	std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiiiiiiiiiiinit... 7" << std::endl;
+
 
 	// MPI
 	if ( jsonInputConfig.contains("mpi-profiling") )
 	{
+
 		MPI_Pcontrol(1);
 		log << "mpi profiling on" << std::endl;
 	}
 
+
+	std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiiiiiiiiiinit... 8" << std::endl;
 
   clock.stop("init");
 	log << "SeerInsituWrap init took: " << clock.getDuration("init") << " s" << std::endl;
@@ -846,7 +877,10 @@ inline int SeerInsituWrap::init(int argc, char* argv[], int _myRank, int _numRan
 	//Seer::writeLog(logName, log.str());
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	if (myRank == 0) std::cout << "Seer insitu initilized!" << std::endl;
+	if (myRank == 0) 
+		std::cout << "Seer insitu initilized!" << std::endl;
+
+	std::cout << _myRank << "~" << "iiiiiiiiiiiiiiiiiiiiiiiiiiiinit... 9" << std::endl;
 
 	return 1;
 }

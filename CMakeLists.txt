@@ -128,6 +128,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 # packages we depend on
 include (xpkg-import)
 find_package (mercury CONFIG REQUIRED)
+find_package (thallium REQUIRED)
 include_directories(${MERCURY_INCLUDE_DIR})
 include_directories("/home/pascalgrosset/spack/opt/spack/linux-centos7-ivybridge/gcc-6.4.0/mochi-sdskv-0.1.14-tzahkondnienxqpqprqvtk7xemk64fir/include")
 xpkg_import_module (argobots REQUIRED argobots)
@@ -139,7 +140,12 @@ xpkg_import_module (sdskv-server REQUIRED sdskv-server)
 add_definitions(-DMOCHI_ENABLED)
 set(MOCHI_ENABLED ON)
 
-
+# Tau plugin
+option(USE_TAU_MOCHI "Use TAU2 Mochi plugin" OFF)
+if (USE_TAU)
+	include_directories("/projects/insituperf/tau2/install/include/")
+	add_definitions(-DTAU_MOCHI_ENABLED)
+endif()
 
 # MPI
 find_package(MPI)

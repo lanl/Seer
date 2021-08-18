@@ -35,14 +35,14 @@ class MochiInterface
 	std::stringstream log;
 
   public:
-	MochiInterface(){};
+	MochiInterface(){ db_id=0; };
 	MochiInterface(std::string serverAddress, uint8_t mplexID, std::string dbName);
 	~MochiInterface(){ cleanup(); }
 	
 	int cleanup();
 	int closeServer();
 
-	int init(std::string serverAddress, uint8_t mplexID, std::string dbName);
+	int init(int myRank, std::string serverAddress, uint8_t mplexID, std::string dbName);
 
 
 	int getValue(std::string key, std::string &value);
@@ -67,14 +67,14 @@ inline MochiInterface::MochiInterface(std::string serverAddress, uint8_t mplexID
 	Timer clock;
 	clock.start("constructor");
 
-	init(serverAddress, mplexID, dbName);
+	//init(serverAddress, mplexID, dbName);
 
 	clock.stop("constructor");
 	log << "MochiInterface constructor took: " << clock.getDuration("constructor") << " s" << std::endl;
 }
 
 
-inline int MochiInterface::init(std::string serverAddress, uint8_t mplexID, std::string dbName)
+inline int MochiInterface::init(int myRank, std::string serverAddress, uint8_t mplexID, std::string dbName)
 {
 	Timer clock;
 	clock.start("init");
@@ -90,6 +90,11 @@ inline int MochiInterface::init(std::string serverAddress, uint8_t mplexID, std:
 	for(unsigned i=0; (i<63 && sdskv_svr_addr_str[i] != '\0' && sdskv_svr_addr_str[i] != ':'); i++)
 		cli_addr_prefix[i] = sdskv_svr_addr_str[i];
 
+	std::cout << myRank << "~" << "start margo ..." << std::endl;
+	std::cout << myRank << "~" << "sdskv_svr_addr_str: " << sdskv_svr_addr_str << std::endl;
+	std::cout << myRank << "~" << "mplex_id:" << mplex_id << std::endl;
+	std::cout << myRank << "~" << "db_name:" << db_name << std::endl;
+
 
 	// start margo
 	mid = margo_init(cli_addr_prefix, MARGO_SERVER_MODE, 0, 0);
@@ -99,6 +104,9 @@ inline int MochiInterface::init(std::string serverAddress, uint8_t mplexID, std:
 		return (-1);
 	}
 
+
+	std::cout << myRank << "~" << "sdskv_client_init ..." << std::endl;
+
 	int ret = sdskv_client_init(mid, &kvcl);
 	if (ret != 0)
 	{
@@ -107,6 +115,8 @@ inline int MochiInterface::init(std::string serverAddress, uint8_t mplexID, std:
 		return -1;
 	}
 
+
+	std::cout << myRank << "~" << "margo_addr_lookup ..." << std::endl;
 
 	// look up the SDSKV server address
 	hg_return_t hret = margo_addr_lookup(mid, sdskv_svr_addr_str, &svr_addr);
@@ -118,6 +128,7 @@ inline int MochiInterface::init(std::string serverAddress, uint8_t mplexID, std:
 		return -1;
 	}
 
+	std::cout << myRank << "~" << "sdskv_provider_handle_create ..." << std::endl;
 	// create a SDSKV provider handle
 	ret = sdskv_provider_handle_create(kvcl, svr_addr, mplex_id, &kvph);
 	if (ret != 0)
@@ -130,7 +141,13 @@ inline int MochiInterface::init(std::string serverAddress, uint8_t mplexID, std:
 	}
 
 
+	std::cout << myRank << "~" << "sdskv_open ..." << std::endl;
+	std::cout << myRank << "~" << "kvph:" << kvph << std::endl;
+	std::cout << myRank << "~" << "db_name:" << db_name << std::endl;
+	std::cout << myRank << "~" << "db_id:" << db_id << std::endl;
+
 	ret = sdskv_open(kvph, db_name, &db_id);
+	std::cout << myRank << "~" << "ret:" << ret << std::endl;
 	if (ret != 0) 
 	{
 		std::cerr << "Error: could not open database " <<  db_name << std::endl;
@@ -143,7 +160,7 @@ inline int MochiInterface::init(std::string serverAddress, uint8_t mplexID, std:
 	}
 
 	clock.stop("init");
-	log << "MochiInterface init took: " << clock.getDuration("init") << " s" << std::endl;
+	std::cout << myRank << "~" << "MochiInterface init took: " << clock.getDuration("init") << " s" << std::endl;
 
 	return 1; // All cool!
 }

@@ -5,27 +5,19 @@
 	"mochi" : true,
 	"mochi-database" :
 	{
-		"name" : "foo",
+		"name" : "foo_test4",
 		"db-type" : "ldb",
-		"conn-type" : "na+sm",
-		"address" : "na+sm://33254/0",
+		"conn-type" : "ofi+tcp",
+		"port" : ":1234",
+		"address" : "ofi+tcp://192.168.101.180",
 		"multiplex" : 1,
 		"polling-rate" : 4
 	},
 
 
-	"papi" : true,
+	"papi" : false,
 	"papi_counters" : 
 	[ 
-		"PAPI_L1_DCH", 
-		"PAPI_L1_DCH", 
-		"PAPI_L1_DCA", 
-		"PAPI_FP_OPS", 
-		"PAPI_MEM_SCY", 
-		"PAPI_L1_DCM", 
-		"PAPI_L1_ICM", 
 		"PAPI_L1_LDM" 
-	],
-
-	"vocab" : "/projects/insituperf/Seer/Seer_Utils/vocab.json"
+	]
 }

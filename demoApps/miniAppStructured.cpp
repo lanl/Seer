@@ -12,6 +12,11 @@
 #include <mpi.h>
 #include <math.h>
 
+//#include <Profile/Profiler.h>
+#ifdef TAU_MOCHI_ENABLED
+#include "TAU.h"
+#endif
+
 #include "timer.hpp"
 #include "seerInSituWrap.hpp"
 
@@ -38,8 +43,13 @@ double distance(float x1, float y1, float z1, float x2, float y2, float z2)
 	return sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2) );
 }
 
+#ifdef TAU_MOCHI_ENABLED
+extern "C" int Tau_dump();
+#endif
+
 int main(int argc, char *argv[])
 {
+	std::cout << "Hellooooo" << std::endl;
 	//std::stringstream msgLog;
 
 	int myRank, numRanks, threadSupport;
@@ -50,7 +60,14 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 	MPI_Get_processor_name(processor_name, &processor_name_len);
 
+  #ifdef TAU_MOCHI_ENABLED
+	TAU_REGISTER_CONTEXT_EVENT(event, "Iteration count");
+  	TAU_CONTEXT_EVENT(event, 232+count);
+  #endif
+
 	int numTimesteps = 500;
+
+	std::cout << "Num timesteps: " << numTimesteps << std::endl;
 
 	srand(time(NULL) + myRank);
 
@@ -105,10 +122,13 @@ int main(int argc, char *argv[])
 	for (int t = 0; t < numTimesteps; t++)
 	{
 	  clock.start("mainLoop");
-
+	  #ifdef TAU_MOCHI_ENABLED
+		TAU_CONTEXT_EVENT(event, t);
 		insitu.timestepInit();
+	  #endif
 
 		Seer::log << "\nTimestep: " << t << std::endl;
+		std::cout << "\nTimestep: " << t << std::endl;
 
 		// vertex centered -  scalar
 		double *pointData = new double[numPoints];
@@ -198,6 +218,8 @@ int main(int argc, char *argv[])
 		  #endif //CATALYST_ENABLED
 
 			insitu.timestepExecute(t);
+
+			//Tau_dump();
 	
 			//temp.writeParts(numRanks, myRank, myRank, "testStructuredMPI_" + std::to_string(t));
 

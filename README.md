@@ -9,12 +9,19 @@ Seer is a lightweight insitu wrapper library adding insitu capabilities to simul
 * C++ 11
 * MPI 3
 * Mochi
-* Paraview Catalyst
+
+Note: gcc/6.4.0 is recommended (gcc/7*, gcc/8*, gcc/9* caused errors when installing Mochi packages ... :( )
 
 
-## Environment Setup
+## Environment/Packages Setup (first time only)
 
-* This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed, modify (or create) packages.yaml to contain the following:
+This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed,
+~~~bash
+git clone https://github.com/spack/spack.git
+spack/share/spack/setup-env.sh
+~~~
+modify (or create) packages.yaml in the ~/.spack folder so that it contains the following:
+
 
 ~~~bash
 packages:
@@ -25,32 +32,24 @@ packages:
 * Setting up packages
 
 ~~~bash
-spack install openmpi
-
 # Mochi
-git clone https://xgitlab.cels.anl.gov/sds/sds-repo.git
-spack repo add sds-repo
-spack install margo
-spack install sdskeyval+leveldb
-spack install py-sdskv
-
-# To install Jupyter notebook (for the client)
-#   load the python associated with the mochi python
-spack load -r py-sdskv  
-
-#   install jupyter for that python
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python get-pip.py
-python -m pip install jupyter
-
-# ParaView
-spack install paraview@5.7.0 +osmesa +python3
-
-# VTK (Optional for testing)
-spack install vtk #(spack install vtk ^hdf5+hl+mpi to bypass error)
-
-# Papi (usually already on the server and doesn't need install)
+git clone https://github.com/mochi-hpc/mochi-spack-packages
+spack repo add mochi-spack-packages
+spack install mochi-margo ^libfabric@1.11.0     # there appears to be a bug in the latest libfrabic 1.13.0
+spack install mochi-sdskv+leveldb ^libfabric@1.11.0
+spack install py-mochi-sdskv ^libfabric@1.11.0
 spack install papi
+~~~
+
+Will take about two hours or so ...
+
+For simplicity, create an bash file (e.g. evn.sh) which contains the following, which will be sourced anytime the modules are needed.
+~~~bash
+module load cmake
+spack load -r mochi-margo
+spack load -r mochi-sdskv+leveldb
+spack load -r py-mochi-sdskv
+spack load -r papi
 ~~~
 
 
@@ -59,15 +58,24 @@ spack install papi
 The following environment needs to be activated as follows:
 
 ~~~bash
-# load whatever modules the sim needs
-
 # load Seer insitu stuff as follows
-spack load -r margo
-spack load -r sdskeyval
+module load cmake
+spack load -r mochi-margo
+spack load -r mochi-sdskv+leveldb
+spack load -r py-mochi-sdskv
+spack load -r papi
+~~~
 
-spack load paraview@5.7.0
-spack load mesa #needed for ParaView without X
+or
 
+~~~ bash
+source evn/env_darwin_new.sh
+~~~
+
+
+Build the code:
+
+~~~ bash
 cd src
 mkdir build
 
@@ -86,33 +94,37 @@ There are three parts of running the insitu package
 
 
 ### 1. Run the Mochi Server (done on server, usually in a batch script)
+Find the ipaddress of the node using $ifconfig$ and add that to the address field in inputs/input-test.json.
+That ipaddress will also be used to launch the mochi server.
+
 
 ~~~bash
-# Load the modules
-spack load -r margo
-spack load -r sdskeyval
+# Load the modules (if not previously loaded)
+spack load -r mochi-margo
+spack load -r mochi-sdskv+leveldb
+# or
+source evn/env_darwin_new.sh
 
 # Distributed memory
-# skv-server-daemon ofi+tcp://<path of server>:<port of server> <name of db>:ldb &
-sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test1:ldb &
+# sdskv-server-daemon ofi+tcp://<path of server>:<port of server> <name of db>:ldb &
+sdskv-server-daemon ofi+tcp://192.168.101.180:1234 foo_test2:ldb &
 
-# Shared memory (testing purposes)
-sdskv-server-daemon na+sm foo:ldb -f address &
+
+# Shared memory (testing purposes only)
+sdskv-server-daemon na+sm foo_test1:ldb -f address &
 ~~~
 
 
 ### 2. Run the Sim (usually batch script)
 
 ~~~bash
-# load whatever modules the sim needs
+# load whatever modules the sim needs (if not previously loaded)
 
 # load Seer insitu stuff as follows 
-spack load openmpi
-spack load -r margo
-spack load -r sdskeyval
-
-spack load paraview@5.7.0
-spack load mesa #needed for ParaView without X
+spack load -r mochi-margo
+spack load -r mochi-sdskv+leveldb
+# or
+source evn/env_darwin_new.sh
 
 
 # Run the sim
@@ -121,9 +133,12 @@ spack load mesa #needed for ParaView without X
 # mpirun -np 4 <sim_name> --insitu <input file>
 mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  
 
-# Shared memory (testing purposes
+# Shared memory (testing purposes only)
 demoApps/testMPI na+sm://9923/0 1 foo 10  
 ~~~
+
+<strong>Note:</strong> Steps The Mochi Server and the Sim can be on the same node
+
 
 ### 3. Run the client
 
@@ -131,14 +146,7 @@ demoApps/testMPI na+sm://9923/0 1 foo 10
 
 ~~~bash
 # Load the modules
-spack load -r py-sdskv
-
-# only needed first time
-jupyter-notebook password
-
-# Launch jupyter notebook on the server
-# jupyter-notebook --no-browser --port=<port_number> --ip=0.0.0.0
-jupyter-notebook --no-browser --port=8897 --ip=0.0.0.0
+spack load -r py-mochi-sdskv
 
 ~~~
 
@@ -147,7 +155,7 @@ jupyter-notebook --no-browser --port=8897 --ip=0.0.0.0
 ~~~bash
 # Tunnel to the server
 #   ssh -N -f -L <port_number>:<host_name>:<port_number> username@cluster 
-ssh -N -f -L 8897:cn37:8897 pascalgrosset@darwin-fe
+ssh -N -f -L 8897:cn30:8897 pascalgrosset@darwin-fe
 ~~~
 
 In the browser:
@@ -156,6 +164,10 @@ In the browser:
 # http://localhost:<port_number>
 http://localhost:8897
 ~~~
+
+
+
+
 
 # Note
 
