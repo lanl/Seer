@@ -5,11 +5,11 @@
 	"mochi" : true,
 	"mochi-database" :
 	{
-		"name" : "foo_test4",
+		"name" : "foo_test5",
 		"db-type" : "ldb",
 		"conn-type" : "ofi+tcp",
 		"port" : ":1234",
-		"address" : "ofi+tcp://192.168.101.180",
+		"address" : "ofi+tcp://192.168.102.2",
 		"multiplex" : 1,
 		"polling-rate" : 4
 	},
@@ -21,3 +21,15 @@
 		"PAPI_L1_LDM" 
 	]
 }
+
+
+192.168.102.10
+192.168.81.44
+foo_test6
+
+foo_test5 phi_ts_150_rank_4
+
+
+192.168.102.49
+192.168.81.83
+foo_test7
