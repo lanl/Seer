@@ -2,13 +2,13 @@
     "mochi": true,
     "mochi-database": 
     {
-        "file-address": "ofi+tcp;ofi_rxm://130.55.2.107:40577",
-        "address": "ofi+tcp://130.55.2.107",
-        "port": "40577",
+        "file-address": "ofi+tcp;ofi_rxm://130.55.2.134:46753",
+        "address": "ofi+tcp://130.55.2.134",
+        "port": "46753",
         "conn-type": "ofi+tcp",
         "db-type": "ldb",
         "multiplex": 1,
-        "name": "foo_test_3",
+        "name": "foo_test_1",
         "polling-rate" : 1
     },
     

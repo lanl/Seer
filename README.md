@@ -207,6 +207,19 @@ derivative works, distribute copies to the public, perform publicly and display 
 others to do so.
 
 
+# Building with TAU
+- Get tau2
+```
+git clone https://github.com/UO-OACISS/tau2.git
+cd tau2
+./configure -mpi -prefix=<tau_folder> -mochi
+```
+- Built tau2 with the following option ```-mpi -prefix=<install_path> -mochi```
+- Locate the path to the plugin libTAU-mochi-plugin.so
+  - ```export TAU_PLUGINS_PATH=/home/pascalgrosset/software/tau2/x86_64/lib/shared-papi-mpi-pdt```
+  
+
+
 # Running
 
 ```bash
