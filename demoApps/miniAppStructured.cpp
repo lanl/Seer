@@ -164,12 +164,7 @@ int main(int argc, char *argv[])
 		explosionValue--;
 
 	  clock.stop("factComputation");
-	  clock.stop("mainLoop");
-
-		Seer::log << "\nnumPoints: " << numPoints << " point data: " << myRank + t * 0.01 << std::endl;
-		Seer::log << "numCells: " << numCells << " cell data: " << myRank + t * 0.05 << std::endl;
-
-	  
+	  clock.stop("main  
 		if (insitu.isInsituOn())
 		{
 			MPI_Barrier(MPI_COMM_WORLD);

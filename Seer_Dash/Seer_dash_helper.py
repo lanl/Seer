@@ -15,14 +15,16 @@ class Seer_Dash_Helper:
 
 		
 
-	def connect(self, loginNode, mochiNodeAddr, username, dbName):
+	def connect(self, loginNode, mochiNodeAddr, mochiServerAddress, username, dbName):
 		self.loginNodeAddr = loginNode
 		self.mochiNodeAddr = mochiNodeAddr
+		self.mochiServerAddress = mochiServerAddress
 		self.username = username
 		self._dbName = dbName
 
 		print("self.loginNodeAddr", self.loginNodeAddr)
 		print("self.mochiNodeAddr", self.mochiNodeAddr)
+		print("self.mochiServerAddress", self.mochiServerAddress)
 		print("self.username", self.username)
 		print("self._dbName", self._dbName)
 
@@ -186,7 +188,7 @@ class Seer_Dash_Helper:
 						break
 				break
 			else:
-				self.connect(self.loginNodeAddr, self.mochiNodeAddr, self.username, self._dbName)
+				self.connect(self.loginNodeAddr, self.mochiNodeAddr, self.mochiServerAddress, self.username, self._dbName)
 				print("Reconnecting")
 				reconnect = reconnect + 1
 			
@@ -274,13 +276,13 @@ class Seer_Dash_Helper:
 		return flat
 
 	def getSimRankData(self, var_name, ts, myRank=0):
-		print("getSimData")
+		print("\n\ngetSimData")
 		print("var_name", var_name)
 		print("ts", ts)
 		print("myRank", myRank)
 		
 
-		_mochiNodeAddr = self.mochiNodeAddr + ":1234"
+		_mochiServerAddress = self.mochiServerAddress + ":1234"
 
 		tic_0 = time.perf_counter()
 
@@ -290,20 +292,26 @@ class Seer_Dash_Helper:
 		var_data = []
 		
 		key = "x_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
+		print(cmd)
 		pos_x.append( self.execute(cmd) )
 		
 		key = "y_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
+		print(cmd)
 		pos_y.append( self.execute(cmd) )
 		
 		key = "z_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
+		print(cmd)
 		pos_z.append( self.execute(cmd) )
+
+		#tempKey = "z_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
 
 
 		key = var_name + "_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
+		print(cmd)
 		var_data.append( self.execute(cmd) )
 
 		toc_0 = time.perf_counter()
@@ -403,7 +411,7 @@ class Seer_Dash_Helper:
 		
 		numRanks = 2
 
-		_mochiNodeAddr = self.mochiNodeAddr + ":1234"
+		_mochiServerAddress = self.mochiServerAddress + ":1234"
 
 		pos_x = []
 		pos_y = []
@@ -411,24 +419,24 @@ class Seer_Dash_Helper:
 		var_data = []
 		for r in range(numRanks):
 			key = "x_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
 			pos_x.append( self.execute(cmd) )
 			
 			key = "y_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
 			pos_y.append( self.execute(cmd) )
 			
 			key = "z_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
 			pos_z.append( self.execute(cmd) )
 
-
+			#tempKey = "z_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
 
 			key = var_name + "_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiNodeAddr + " " + self._dbName + " " + key
+			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
 			var_data.append( self.execute(cmd) )
 			
-
+			
 			#print("!key", key)
 			#print("!cmd", cmd)
 			#print("!var_data[]", var_data[r])

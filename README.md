@@ -5,6 +5,7 @@ Seer is a lightweight insitu wrapper library adding insitu capabilities to simul
 
 ## Requirements
 
+Server-Side:
 * CMake 3.10 or above
 * C++ 11
 * MPI 3
@@ -12,13 +13,25 @@ Seer is a lightweight insitu wrapper library adding insitu capabilities to simul
 
 Note: gcc/6.4.0 is recommended (gcc/7*, gcc/8*, gcc/9* caused errors when installing Mochi packages ... :( )
 
+Client-Side:
+ * dash
+ * pandas
+ * plotly
+ * scp
+ * paramiko
 
-## Environment/Packages Setup (first time only)
 
-This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed,
+# Setup
+
+These are need for the first time only at setup:
+
+## Server Side
+
+This project uses [Spack](https://spack.readthedocs.io/en/latest/).
 ~~~bash
 git clone https://github.com/spack/spack.git
 spack/share/spack/setup-env.sh
+spack install gcc@6.4.0
 ~~~
 modify (or create) packages.yaml in the ~/.spack folder so that it contains the following:
 
@@ -29,7 +42,7 @@ packages:
         variants: fabrics=tcp,rxm
 ~~~
 
-* Setting up packages
+### Setting up packages:
 
 ~~~bash
 # Mochi
@@ -45,7 +58,8 @@ Will take about two hours or so ...
 
 For simplicity, create an bash file (e.g. evn.sh) which contains the following, which will be sourced anytime the modules are needed.
 ~~~bash
-module load cmake
+spack load gcc@6.4.0
+spack load cmake
 spack load -r mochi-margo
 spack load -r mochi-sdskv+leveldb
 spack load -r py-mochi-sdskv
@@ -53,13 +67,25 @@ spack load -r papi
 ~~~
 
 
-## Building the sim
+## Client side
+
+Only python 3.7+ is needed on the client. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is a good package to install.
+~~~bash
+pip install paramiko
+pip install scp
+pip install dash
+pip install dash_bootstrap_components
+pip install pandas
+~~~
+
+# Building the sim
 
 The following environment needs to be activated as follows:
 
 ~~~bash
-# load Seer insitu stuff as follows
-module load cmake
+# load Seer insitu stuff as follows or use the evn.sh file created
+spack load gcc@6.4.0
+spack load cmake
 spack load -r mochi-margo
 spack load -r mochi-sdskv+leveldb
 spack load -r py-mochi-sdskv
@@ -73,7 +99,7 @@ source evn/env_darwin_new.sh
 ~~~
 
 
-Build the code:
+## Build the code:
 
 ~~~ bash
 cd src
@@ -84,7 +110,8 @@ ccmake ..
 ~~~
 
 
-## Running
+
+# Running
 
 There are three parts of running the insitu package
 
@@ -110,12 +137,17 @@ source evn/env_darwin_new.sh
 sdskv-server-daemon ofi+tcp://192.168.101.180:1234 foo_test2:ldb &
 
 
-# Shared memory (testing purposes only)
-sdskv-server-daemon na+sm foo_test1:ldb -f address &
+# Shared memory (testing purposes on local machine only)
+sdskv-server-daemon na+sm foo_test1:ldb -f address
+
+e.g. sdskv-server-daemon na+sm foo_test1:ldb -f address
 ~~~
 
+Then open the file called "address" and locate the na+sm address in there. It could be something like "na+sm://1107352/0".
+This address is then used in the ["mochi-database"]["address"] field in the JSON file that is passed to the simulation.
 
-### 2. Run the Sim (usually batch script)
+
+### 2. Run the Sim (done on the server, usually batch script)
 
 ~~~bash
 # load whatever modules the sim needs (if not previously loaded)
@@ -140,8 +172,11 @@ demoApps/testMPI na+sm://9923/0 1 foo 10
 <strong>Note:</strong> Steps The Mochi Server and the Sim can be on the same node
 
 
-### 3. Run the client
-
+### 3. Run the client (on the local desktop)
+~~~bash
+python Seer_dash.py
+~~~
+<!-- 
 #### Remote (On Server)
 
 ~~~bash
@@ -163,7 +198,7 @@ In the browser:
 ~~~bash
 # http://localhost:<port_number>
 http://localhost:8897
-~~~
+~~~ -->
 
 
 

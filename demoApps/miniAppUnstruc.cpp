@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
 //
 // Running:
 
+// mpirun -np 4 demoApps/miniAppStructured --insitu ../inSitu/inputs/inputs.json
+
 // vtk output:
 // mpirun -np 4 demoApps/miniAppUnstruc
 
