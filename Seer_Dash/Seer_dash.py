@@ -26,6 +26,10 @@ simulation_variables = []
 mpi_ranks = []
 numRanks = 0
 
+simVar = ""
+timestep = -1
+mpiViewRank = -1
+
 
 # Connect to server
 serverConnect = sdh.Seer_Dash_Helper()
@@ -254,110 +258,6 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 	return simulation_variables, mpi_ranks, timestep_max
 
 
-# @app.callback(
-#    dash.dependencies.Output('graph_3d', 'children'),
-#     [dash.dependencies.Input('simVar', 'value'),
-#      dash.dependencies.Input('timestep', 'value')],
-# 	[dash.dependencies.State('graph_3d', 'children')])
-# def updateFig(_simVar, _timestep, children):
-# 	if _timestep > 0 and _simVar != None:
-# 		print(_timestep)
-# 		print(_simVar)
-
-# 		tic_0 = time.perf_counter()
-
-# 		global serverConnect
-# 		#df = serverConnect.getSimData()
-# 		ts = int( int(_timestep) / 25 ) * 25
-
-
-# 		frames = []
-# 		for r in range(1):
-# 			_df = serverConnect.getSimRankData( _simVar, ts, int(r))
-# 			frames.append(_df)
-# 		df = pd.concat(frames)
-
-# 		if len(df.index) > 500000:
-# 			df = df.sample(n = 250000)
-
-# 		toc_0 = time.perf_counter()
-
-# 		tic_1 = time.perf_counter()
-
-# 		fig = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
-# 										mode ='markers',
-# 										marker = dict(
-# 											size = 1,
-# 											color=df[_simVar],
-# 											colorscale ='turbo',
-# 											opacity = 1
-# 										))])
-# 		fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
-
-# 		children.clear()
-# 		children.append( dcc.Graph(figure=fig) )
-
-# 		toc_1 = time.perf_counter()
-
-# 		elapsed_time_0 = toc_0 - tic_0
-# 		elapsed_time_1 = toc_1 - tic_1
-# 		print("Getting  data  took ", elapsed_time_0, " seconds")
-# 		print("Drawing data  took ", elapsed_time_1, " seconds")
-
-# 	return children
- 
-
-# @app.callback(
-# 	dash.dependencies.Output('graph_3d_rank', 'children'),
-# 	[dash.dependencies.Input(component_id='mpiRank', component_property='value'),
-#  	 dash.dependencies.Input(component_id='simVar', component_property='value'),
-# 	 dash.dependencies.Input(component_id='timestep', component_property='value')],
-# 	 [dash.dependencies.State('graph_3d', 'children')])
-# def updateSingleRank( _mpiRank, _simVar, _timestep, children):
-# 	if _timestep > 0 and _simVar != None:
-# 		print(_timestep)
-# 		print(_simVar)
-# 		print(_mpiRank)
-
-# 		tic_0 = time.perf_counter()
-
-# 		global serverConnect
-# 		ts = int( int(_timestep) / 25 ) * 25
-# 		if _mpiRank == None:
-# 			myRank = 0
-# 		else:
-# 			myRank = int(_mpiRank)
-
-# 		df = serverConnect.getSimRankData( _simVar, ts, myRank)
-
-# 		toc_0 = time.perf_counter()
-
-# 		tic_1 = time.perf_counter()
-
-
-# 		fig = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
-# 										mode ='markers',
-# 										marker = dict(
-# 											size = 1,
-# 											color=df[_simVar],
-# 											colorscale ='turbo',
-# 											opacity = 1
-# 										))])
-# 		fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
-
-# 		children.clear()
-# 		children.append( dcc.Graph(figure=fig) )
-
-# 		toc_1 = time.perf_counter()
-
-# 		elapsed_time_1 = toc_0 - tic_0
-# 		elapsed_time_2 = toc_1 - tic_1
-
-# 		print("updateSingleRank gather data  took ", elapsed_time_1, " seconds")
-# 		print("updateSingleRank draw data  took ", elapsed_time_2, " seconds")
-
-# 	return children
-
 
 @app.callback(
 	[Output('graph_3d', 'children'),
@@ -371,69 +271,151 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 	if _timestep > 0 and _simVar != None:
 
-		#
-		# Get all the ranks
-		#
-		print(_timestep)
-		print(_simVar)
+		global simVar
+		global timestep
+		global mpiViewRank
 
-		tic_0 = time.perf_counter()	# start
-
-		global serverConnect
-		#df = serverConnect.getSimData()
 		
-		#ts = int( int(_timestep) / 25 ) * 25
-		ts = int( int(_timestep) ) 
+		if (_simVar != simVar or timestep != int(_timestep)):
+
+			#
+			# Get all the ranks
+			#
+			print("\n\n----------------------------------")
+			print("update Global View")
+			print("timestep", _timestep)
+			print("simVar",_simVar)
+
+			# Set these parameters
+			simVar = _simVar
+			timestep = int(_timestep)
 
 
-		global numRanks
-		#numRanks = 1	# For testing
+			tic_0 = time.perf_counter()	# start
 
-		frames = []
-		for r in range(numRanks):
-			_df = serverConnect.getSimRankData( _simVar, ts, int(r))
-			frames.append(_df)
-		df = pd.concat(frames)
-
-		if len(df.index) > 500000:
-			df = df.sample(n = 250000)
-
-		toc_0 = time.perf_counter()	# stop
-
-		tic_1 = time.perf_counter() # start
-
-		fig1 = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
-										mode ='markers',
-										marker = dict(
-											size = 1,
-											color=df[_simVar],
-											colorscale ='turbo',
-											opacity = 1
-										))])
-		fig1.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
-
-		children1.clear()
-		children1.append( dcc.Graph(figure=fig1) )
-
-		toc_1 = time.perf_counter()	# stop
-
-		elapsed_time_0 = toc_0 - tic_0
-		elapsed_time_1 = toc_1 - tic_1
-		print("Getting  data  took ", elapsed_time_0, " seconds")
-		print("Drawing data  took ", elapsed_time_1, " seconds")
+			global serverConnect
+			#df = serverConnect.getSimData()
+			
+			#ts = int( int(_timestep) / 25 ) * 25
+			ts = int( _timestep) 
 
 
+			global numRanks
+			numRanks = 4	# For testing
 
-		#
-		# Get individual rank
-		# 		print(_timestep)
-		print("----------------------------------")
-		print(_simVar)
+			frames = []
+			for r in range(numRanks):
+				_df = serverConnect.getSimRankData( _simVar, ts, int(r))
+				frames.append(_df)
+			df = pd.concat(frames)
+
+			if len(df.index) > 500000:
+				df = df.sample(n = 250000)
+
+			toc_0 = time.perf_counter()	# stop
+
+			tic_1 = time.perf_counter() # start
+
+			fig1 = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
+											mode ='markers',
+											marker = dict(
+												size = 1,
+												color=df[_simVar],
+												colorscale ='turbo',
+												opacity = 1
+											))])
+			fig1.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
+
+			children1.clear()
+			children1.append( dcc.Graph(figure=fig1) )
+
+			toc_1 = time.perf_counter()	# stop
+
+			elapsed_time_0 = toc_0 - tic_0
+			elapsed_time_1 = toc_1 - tic_1
+			print("Getting  data  took ", elapsed_time_0, " seconds")
+			print("Drawing data  took ", elapsed_time_1, " seconds")
+
+
+
+		if (mpiViewRank != _mpiRank):
+			#
+			# Get individual rank
+			# 		print(_timestep)
+			print("\n\n----------------------------------")
+			print("update one rank View")
+			print("timestep", _timestep)
+			print("simVar",_simVar)
+			print("mpiRank",_mpiRank)
+
+			mpiViewRank = mpiViewRank
+
+			tic_0 = time.perf_counter()	# start 
+
+			
+			#ts = int( int(_timestep) / 25 ) * 25
+			ts = int( int(_timestep) ) 
+
+			if _mpiRank == None:
+				myRank = 0
+			else:
+				myRank = int(_mpiRank)
+
+			df = serverConnect.getSimRankData( _simVar, ts, myRank)
+
+			toc_0 = time.perf_counter()	# stop
+
+
+
+			tic_1 = time.perf_counter() # start
+
+
+			fig2 = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
+											mode ='markers',
+											marker = dict(
+												size = 1,
+												color=df[_simVar],
+												colorscale ='turbo',
+												opacity = 1
+											))])
+			fig2.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
+
+			children2.clear()
+			children2.append( dcc.Graph(figure=fig2) )
+
+			toc_1 = time.perf_counter()	# stop
+
+			elapsed_time_1 = toc_0 - tic_0
+			elapsed_time_2 = toc_1 - tic_1
+
+			print("updateSingleRank gather data  took ", elapsed_time_1, " seconds")
+			print("updateSingleRank draw data  took ", elapsed_time_2, " seconds")
+
+
+	return children1, children2
+	
+
+'''
+@app.callback(
+	Output('graph_3d_rank', 'children'),
+	Input(component_id='mpiRank', component_property='value'),
+	[State('graph_3d_rank', 'children')]
+)
+def updateSingleRank( _mpiRank, children):
+	global simVar
+	global timestep
+	global mpiViewRank
+
+	_simVar = simVar
+	_timestep = timestep
+
+	if _timestep > 0:
+		print("updateSingleRank")
 		print(_mpiRank)
 
-		tic_0 = time.perf_counter()	# start 
+		tic_0 = time.perf_counter()
 
-		
+		global serverConnect
 		#ts = int( int(_timestep) / 25 ) * 25
 		ts = int( int(_timestep) ) 
 
@@ -444,12 +426,13 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 		df = serverConnect.getSimRankData( _simVar, ts, myRank)
 
-		toc_0 = time.perf_counter()	# stop
-
-		tic_1 = time.perf_counter() # start
+		toc_0 = time.perf_counter()
 
 
-		fig2 = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
+
+		tic_1 = time.perf_counter()
+
+		fig = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
 										mode ='markers',
 										marker = dict(
 											size = 1,
@@ -457,12 +440,12 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 											colorscale ='turbo',
 											opacity = 1
 										))])
-		fig2.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
+		fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
 
-		children2.clear()
-		children2.append( dcc.Graph(figure=fig2) )
+		children.clear()
+		children.append( dcc.Graph(figure=fig) )
 
-		toc_1 = time.perf_counter()	# stop
+		toc_1 = time.perf_counter()
 
 		elapsed_time_1 = toc_0 - tic_0
 		elapsed_time_2 = toc_1 - tic_1
@@ -470,99 +453,12 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 		print("updateSingleRank gather data  took ", elapsed_time_1, " seconds")
 		print("updateSingleRank draw data  took ", elapsed_time_2, " seconds")
 
-
-	return children1, children2
-	
-
-
-# @app.callback(
-# 	Output('graph_3d_rank', 'children'),
-# 	[Input(component_id='mpiRank', component_property='value'),
-# 	Input(component_id='simVar', component_property='value'),
-# 	Input(component_id='timestep', component_property='value')],
-# 	[State('graph_3d', 'children')]
-# )
-# def updateSingleRank( _mpiRank, _simVar, _timestep, children):
-# 	if _timestep > 0 and _simVar != None:
-# 		print(_timestep)
-# 		print(_simVar)
-# 		print(_mpiRank)
-
-# 		tic_0 = time.perf_counter()
-
-# 		global serverConnect
-# 		ts = int( int(_timestep) / 25 ) * 25
-# 		if _mpiRank == None:
-# 			myRank = 0
-# 		else:
-# 			myRank = int(_mpiRank)
-
-# 		df = serverConnect.getSimRankData( _simVar, ts, myRank)
-
-# 		toc_0 = time.perf_counter()
-
-# 		tic_1 = time.perf_counter()
-
-
-# 		fig = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
-# 										mode ='markers',
-# 										marker = dict(
-# 											size = 1,
-# 											color=df[_simVar],
-# 											colorscale ='turbo',
-# 											opacity = 1
-# 										))])
-# 		fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
-
-# 		children.clear()
-# 		children.append( dcc.Graph(figure=fig) )
-
-# 		toc_1 = time.perf_counter()
-
-# 		elapsed_time_1 = toc_0 - tic_0
-# 		elapsed_time_2 = toc_1 - tic_1
-
-# 		print("updateSingleRank gather data  took ", elapsed_time_1, " seconds")
-# 		print("updateSingleRank draw data  took ", elapsed_time_2, " seconds")
-
-# 	return children
+	return children
+'''
 
 
 
 
-
-# @app.callback(
-# 	Output('graph_3d', 'children'),
-# 	[Input(component_id='simVar', component_property='value'),
-# 	Input(component_id='timestep', component_property='value')],
-# 	[State('graph_3d', 'children')]
-# )
-# def updateFig(_simVar, _timestep, children):
-# 	if _timestep > 0 and _simVar != None:
-# 		print(_timestep)
-# 		print(_simVar)
-
-# 		global serverConnect
-# 		#df = serverConnect.getSimData()
-# 		ts = int( int(_timestep) / 25 ) * 25
-# 		df = serverConnect.getSimData( _simVar, ts )
-
-# 		fig = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
-# 										mode ='markers',
-# 										marker = dict(
-# 											size = 1,
-# 											color=df[_simVar],
-# 											colorscale ='turbo',
-# 											opacity = 1
-# 										))])
-# 		fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
-
-# 		children.clear()
-# 		children.append( dcc.Graph(figure=fig) )
-
-# 	return children
-	
-	
 
 
 if __name__ == '__main__':
