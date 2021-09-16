@@ -269,13 +269,20 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 	 State('graph_3d_rank', 'children')]
 )
 def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
-	if _timestep > 0 and _simVar != None:
+	#if _timestep > 0 and _simVar != None:
 
-		global simVar
-		global timestep
-		global mpiViewRank
+	global simVar
+	global timestep
+	global mpiViewRank
+	global numRanks
+	global serverConnect
 
-		
+
+	oneRankUpdate = False
+
+	if ((connected_to_server == True) and (_timestep > 0 and _simVar != None)):
+
+
 		if (_simVar != simVar or timestep != int(_timestep)):
 
 			#
@@ -290,18 +297,16 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 			simVar = _simVar
 			timestep = int(_timestep)
 
+			oneRankUpdate = True	# force one rank update if variables change
+
 
 			tic_0 = time.perf_counter()	# start
 
-			global serverConnect
-			#df = serverConnect.getSimData()
 			
-			#ts = int( int(_timestep) / 25 ) * 25
+			#ts = int( int(_timestep) / 25 ) * 25	# for HACC
 			ts = int( _timestep) 
-
-
-			global numRanks
-			numRanks = 4	# For testing
+			
+			numRanks = 4	# For testing purposes only
 
 			frames = []
 			for r in range(numRanks):
@@ -313,6 +318,8 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 				df = df.sample(n = 250000)
 
 			toc_0 = time.perf_counter()	# stop
+
+
 
 			tic_1 = time.perf_counter() # start
 
@@ -331,6 +338,9 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 			toc_1 = time.perf_counter()	# stop
 
+
+
+
 			elapsed_time_0 = toc_0 - tic_0
 			elapsed_time_1 = toc_1 - tic_1
 			print("Getting  data  took ", elapsed_time_0, " seconds")
@@ -338,7 +348,7 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 
 
-		if (mpiViewRank != _mpiRank):
+		if (mpiViewRank != _mpiRank or oneRankUpdate == True):
 			#
 			# Get individual rank
 			# 		print(_timestep)
@@ -350,10 +360,11 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 			mpiViewRank = mpiViewRank
 
+
+
 			tic_0 = time.perf_counter()	# start 
 
-			
-			#ts = int( int(_timestep) / 25 ) * 25
+			#ts = int( int(_timestep) / 25 ) * 25	# HACC
 			ts = int( int(_timestep) ) 
 
 			if _mpiRank == None:
@@ -364,6 +375,7 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 			df = serverConnect.getSimRankData( _simVar, ts, myRank)
 
 			toc_0 = time.perf_counter()	# stop
+
 
 
 
@@ -384,6 +396,10 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 			children2.append( dcc.Graph(figure=fig2) )
 
 			toc_1 = time.perf_counter()	# stop
+
+
+
+
 
 			elapsed_time_1 = toc_0 - tic_0
 			elapsed_time_2 = toc_1 - tic_1
