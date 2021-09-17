@@ -13,7 +13,60 @@ class Seer_Dash_Helper:
 	def __init__(self):
 		pass
 
+
+	def listToString(self, l): 
+		keysStr = "[" 
+
+		for el in l:
+			keysStr = keysStr + "\"" + el + "\","
+
+		keysStr = keysStr.rstrip(keysStr[-1])   #remove last ","
+		keysStr = keysStr + "]"
 		
+		return keysStr
+		
+
+	def parseText(self, text, seperator, variables):
+		outputDict = {}
+		index = 0
+		#print("\n\n\ntext:", text)
+		#print("len(text)", len(text))
+
+		i = 0
+		while (i < len(text)):
+			line = text[i]
+			#print("Line:", i, ":", text[i])
+
+			if line.startswith(seperator, 0, len(seperator)):
+				i = i+1
+				output_line = text[i]
+				#print("output_line 1:", output_line)
+				outputDict[ variables[index] ] = output_line    #store line in dictionary
+				
+				i = i+1
+				index = index + 1
+
+			i = i+1
+
+		#print("variables",variables)
+		#print("outputDict",outputDict)
+
+		return outputDict
+
+
+	def getListOfVariables(self, vars):
+		listOfVars = []
+		for v in vars:
+			listOfVars.append({'label':v, 'value':v})
+
+		return listOfVars
+	
+
+	def close(self):
+		self.jhost.close()
+		self.scp.close()
+
+
 
 	def connect(self, loginNode, mochiNodeAddr, mochiServerAddress, username, dbName):
 		self.loginNodeAddr = loginNode
@@ -22,7 +75,7 @@ class Seer_Dash_Helper:
 		self.username = username
 		self._dbName = dbName
 
-		print("self.loginNodeAddr", self.loginNodeAddr)
+		print("\nself.loginNodeAddr", self.loginNodeAddr)
 		print("self.mochiNodeAddr", self.mochiNodeAddr)
 		print("self.mochiServerAddress", self.mochiServerAddress)
 		print("self.username", self.username)
@@ -58,64 +111,22 @@ class Seer_Dash_Helper:
 
 		toc = time.perf_counter()
 		elapsed_time = toc - tic
-		print("connecting established, took ", elapsed_time, " seconds")
+		print("connecting established, took ", elapsed_time, " seconds\n\n")
 
 		# For copying files
 		self.scp = SCPClient(self.vm.get_transport())
 
-	def create_session(self):
-		return self.ssh_client.invoke_shell()
 
-   
-	def gatherInitialData(self):
-		# Get the number of timesteps
-
-		# Get the scalars
-
-		pass
-
-	@staticmethod
-	def _print_exec_out(cmd, out_buf, err_buf, exit_status):
-		print('command executed: {}'.format(cmd))
-		print('STDOUT:')
-		for line in out_buf:
-			print(line, end="")
-		print('end of STDOUT')
-		print('STDERR:')
-		for line in err_buf:
-			print(line, end="")
-		print('end of STDERR')
-		print('finished with exit status: {}'.format(exit_status))
-		print('------------------------------------')
-		pass
 	
-	def execute(self, cmd):
-		#print(cmd)
-
-		# cmd = cmd.strip('\n')
-		# print("111")
-		# self.stdin.write(cmd + '\n')
-		# print("222")
-		# shin = self.stdin
-		# print("333")
-		# self.stdin.flush()
-		# print("444")
-		# print(self.stdout.read())
-		# print("555")
-
-		# """
-
-		# :param cmd: the command to be executed on the remote computer
-		# :examples:  execute('ls')
-		# 			execute('finger')
-		# 			execute('cd folder_name')
-		# """
+	def execute(self, cmd, keys=[]):
+		print("\nexecute cmd:", cmd)
 
 		tic = time.perf_counter()
 
 		max_reconnect = 5
 		reconnect = 0
-		output_data = ""
+		#output_data = ""
+		outputDic = {}
 
 		while reconnect < max_reconnect:
 
@@ -158,6 +169,10 @@ class Seer_Dash_Helper:
 								replace('\b', '').replace('\r', ''))
 
 			toc_2 = time.perf_counter()
+			elapsed_time_2 = toc_2 - tic_2
+			print("parsing 1 data  took ", elapsed_time_2, " seconds")
+
+
 
 			tic_3 = time.perf_counter()
 
@@ -175,108 +190,39 @@ class Seer_Dash_Helper:
 			#print("len(shout)",len(shout))
 			if len(shout) != 0:
 				storeOutput = False
-				for line in shout:	#output_buffer
-					if storeOutput == False:
-						#print("Line:", line)
-						if line == "*_*_*\n":
-							storeOutput = True
-					else:
-						#print("stored Line:", line)
-						#output_data.append(line)
-						output_data = line
-						storeOutput = False
-						break
+
+				#print("shout:",shout)
+				outputDic = self.parseText(shout, "*_*_*", keys)
+				#print("outputDic:",outputDic)
+
+				toc_3 = time.perf_counter()
+				elapsed_time_3 = toc_3 - tic_3
+				print("parsing 2 data  took ", elapsed_time_3, " seconds")
+
+
 				break
 			else:
 				self.connect(self.loginNodeAddr, self.mochiNodeAddr, self.mochiServerAddress, self.username, self._dbName)
 				print("Reconnecting")
 				reconnect = reconnect + 1
 			
-
-			toc_3 = time.perf_counter()
-
-
-			elapsed_time_2 = toc_2 - tic_2
-			print("parsing 1 data  took ", elapsed_time_2, " seconds")
-
-			elapsed_time_3 = toc_3 - tic_3
-			print("parsing 2 data  took ", elapsed_time_3, " seconds")
 			
-
-			"""
-			tic_2 = time.perf_counter()
-
-			if self.stdout != None:
-				print("Hi")
-				storeOutput = False
-				for line in self.stdout:
-					print(line)
-					if storeOutput == False:
-						if str(line).startswith("*_*_*"):
-							print("starts with")
-							storeOutput = True
-					else:
-						output_data = str(line)
-						data = self.stdout.readlines()
-						print("output_data", output_data)
-						self.stdout.flush()
-
-						storeOutput = False
-						break
-				break
-			else:
-				print("Ho")
-				self.connect(self.loginNodeAddr, self.mochiNodeAddr, self.username, self._dbName)
-				print("Reconnecting")
-				reconnect = reconnect + 1
-
-			
-			toc_2 = time.perf_counter()
-			elapsed_time_2 = toc_2 - tic_2
-			print("parsing 1 data  took ", elapsed_time_2, " seconds")
-			"""
-
-		tic_4 = time.perf_counter()
-
-		#print("output_data",output_data)
-		_output_list = []
-		if output_data == "":
-			print("No data was gathered!!!!")
-		else:
-			_output_list = output_data.split(',')
-			_output_list[-1] =_output_list[-1].strip()
-
-		toc_4 = time.perf_counter()
-		elapsed_time_4 = toc_4 - tic_4
-		print("parsing 3 data  took ", elapsed_time_4, " seconds")
 		
 		elapsed_time_1 = toc_1 - tic_1
 		print("running command  took ", elapsed_time_1, " seconds")
 
 		
-
 		toc = time.perf_counter()
 		elapsed_time = toc - tic
-		print("Getting data  took ", elapsed_time, " seconds")
+		print("Getting data took ", elapsed_time, " seconds\n\n")
 				
-		return _output_list
+
+		return outputDic
 
 
-
-		#self._print_exec_out(cmd=cmd, out_buf=shout, err_buf=sherr, exit_status=exit_status)
-		#return shin, shout, sherr
-
-
-	def flattenList(self, bigList):
-		flat=[]
-		for i in bigList:
-			for j in i:
-				flat.append(j)
-
-		return flat
 
 	def getSimRankData(self, var_name, ts, myRank=0):
-		print("\n\ngetSimData")
+		print("\n\getSimRankData")
 		print("var_name", var_name)
 		print("ts", ts)
 		print("myRank", myRank)
@@ -286,97 +232,56 @@ class Seer_Dash_Helper:
 
 		tic_0 = time.perf_counter()
 
-		pos_x = []
-		pos_y = []
-		pos_z = []
-		var_data = []
-		
-		key = "x_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-		print(cmd)
-		pos_x.append( self.execute(cmd) )
-		
-		key = "y_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-		print(cmd)
-		pos_y.append( self.execute(cmd) )
-		
-		key = "z_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-		print(cmd)
-		pos_z.append( self.execute(cmd) )
+		# pos_x = []
+		# pos_y = []
+		# pos_z = []
+		# var_data = []
 
-		#tempKey = "z_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
+		
+		keys = []
+		keys.append("x_ts_" + str(ts) + "_rank_" + str(myRank))
+		keys.append("y_ts_" + str(ts) + "_rank_" + str(myRank))
+		keys.append("z_ts_" + str(ts) + "_rank_" + str(myRank))
+		keys.append(var_name + "_ts_" + str(ts) + "_rank_" + str(myRank))
 
+		keyString = self.listToString(keys)
+		#print("keys:",keys)
+		#print(keyString)
 
-		key = var_name + "_ts_" + str(ts) + "_rank_" + str(myRank)
-		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-		print(cmd)
-		var_data.append( self.execute(cmd) )
+		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + keyString
+		#print("cmd:",cmd)
+		
+
+		outputDic = self.execute(cmd, keys)
+
+		# print(outputDic)
+		# print(keys)
+
+		# print(keys[0], outputDic[keys[0]])
+		# print(keys[1], outputDic[keys[1]])
+		# print(keys[2], outputDic[keys[2]])
+		# print(keys[3], outputDic[keys[3]])
 
 		toc_0 = time.perf_counter()
 		
 
-		print("len(var_data[0])", len(var_data[0]))
-
-
-		tic_1 = time.perf_counter()
 
 		# Deserialize data
-		pos_data_x = []
-		pos_data_y = []
-		pos_data_z = []
-		variable_data = []
+		tic_1 = time.perf_counter()
 
-		if len(pos_x[0]) > 0:
-			pos_x[0].pop() 
-
-		if len(pos_y[0]) > 0:
-			pos_y[0].pop()
-
-		if len(pos_z[0]) > 0:
-			pos_z[0].pop()
-
-		if len(var_data[0]) > 0:
-			var_data[0].pop()
-
-		pos_data_x.append( pos_x[0] )
-		pos_data_y.append( pos_y[0] )
-		pos_data_z.append( pos_z[0] )
-		variable_data.append( var_data[0] )
-
-		toc_1 = time.perf_counter()
-
-		#print("pos_data_x", pos_data_x)
-		#print("variable_data", variable_data)
-
-		tic_2 = time.perf_counter()
-
-
-		flat_x = self.flattenList(pos_data_x)
-		flat_y = self.flattenList(pos_data_y)
-		flat_z = self.flattenList(pos_data_z)
-		flat_var = self.flattenList(variable_data)
-
-
-		toc_2 = time.perf_counter()
-
-
-		# print("flat_x", flat_x)
-		# print("flat_y", flat_y)
-		# print("flat_z", flat_z)
-		# print("flat_var", flat_var)
-
-
-		tic_3 = time.perf_counter()
-
+		flat_x   = outputDic[keys[0]].split(',')
+		flat_y   = outputDic[keys[1]].split(',')
+		flat_z   = outputDic[keys[2]].split(',')
+		flat_var = outputDic[keys[3]].split(',')
 
 		_temp_x = [float(ele) for ele in flat_x]
 		_temp_y = [float(ele) for ele in flat_y]
 		_temp_z = [float(ele) for ele in flat_z]
 		_temp_var = [float(ele) for ele in flat_var]
 
-		toc_3 = time.perf_counter()
+		toc_1 = time.perf_counter()
+
+
 
 		tic_4 = time.perf_counter()
 
@@ -385,159 +290,15 @@ class Seer_Dash_Helper:
 
 		toc_4 = time.perf_counter()
 
+
+
 		elapsed_time_0 = toc_0 - tic_0
 		print("getting var data command  took ", elapsed_time_0, " seconds")
 
 		elapsed_time_1 = toc_1 - tic_1
 		print("deserialize var data command  took ", elapsed_time_1, " seconds")
 
-		elapsed_time_2 = toc_2 - tic_2
-		print("flatten var data command  took ", elapsed_time_2, " seconds")
-
-		elapsed_time_3 = toc_3 - tic_3
-		print("convert to float var data command  took ", elapsed_time_3, " seconds")
-
 		elapsed_time_4 = toc_4 - tic_4
 		print("convert to df var data command  took ", elapsed_time_4, " seconds")
 
 		return df
-
-
-
-	def getSimData(self, var_name, ts):
-		print("getSimData")
-		print("var_name", var_name)
-		print("ts", ts)
-		
-		numRanks = 2
-
-		_mochiServerAddress = self.mochiServerAddress + ":1234"
-
-		pos_x = []
-		pos_y = []
-		pos_z = []
-		var_data = []
-		for r in range(numRanks):
-			key = "x_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-			pos_x.append( self.execute(cmd) )
-			
-			key = "y_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-			pos_y.append( self.execute(cmd) )
-			
-			key = "z_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-			pos_z.append( self.execute(cmd) )
-
-			#tempKey = "z_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
-
-			key = var_name + "_ts_" + str(ts) + "_rank_" + str(r)
-			cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + key
-			var_data.append( self.execute(cmd) )
-			
-			
-			#print("!key", key)
-			#print("!cmd", cmd)
-			#print("!var_data[]", var_data[r])
-
-
-		print("len(var_data[0])", len(var_data[0]))
-
-
-		# Deserialize data
-		pos_data_x = []
-		pos_data_y = []
-		pos_data_z = []
-		variable_data = []
-		for r in range(numRanks):
-			# Remove the last empty
-			pos_x[r].pop()
-			pos_y[r].pop()
-			pos_z[r].pop()
-			var_data[r].pop()
-
-			pos_data_x.append( pos_x[r] )
-			pos_data_y.append( pos_y[r] )
-			pos_data_z.append( pos_z[r] )
-			variable_data.append( var_data[r] )
-
-		#print("pos_data_x", pos_data_x)
-		#print("variable_data", variable_data)
-
-
-		flat_x = self.flattenList(pos_data_x)
-		flat_y = self.flattenList(pos_data_y)
-		flat_z = self.flattenList(pos_data_z)
-		flat_var = self.flattenList(variable_data)
-
-
-		# print("flat_x", flat_x)
-		# print("flat_y", flat_y)
-		# print("flat_z", flat_z)
-		# print("flat_var", flat_var)
-
-
-		_temp_x = [float(ele) for ele in flat_x]
-		_temp_y = [float(ele) for ele in flat_y]
-		_temp_z = [float(ele) for ele in flat_z]
-		_temp_var = [float(ele) for ele in flat_var]
-
-		df = pd.DataFrame( list(zip(_temp_x, _temp_y, _temp_z, _temp_var)), columns =['x', 'y', 'z', var_name] )
-		df['dummy_size'] = 0.01
-
-		return df
-
-
-
-	def getTestData(self):	#temporary
-		df = pd.read_csv("ts_499_1M.csv")
-		df['dummy_size'] = 0.01
-
-		newDf = df.sample(n = 250000)
-
-		print("the data")
-
-		return newDf
-
-
-	def getListOfVars(self):	#temporary
-		listOfVars = []
-		listOfVars.append({'label':'pressure', 'value':'pressure'})
-		listOfVars.append({'label':'temperature', 'value':'temperature'})
-		listOfVars.append({'label':'energy', 'value':'energy'})
-
-		numTs = 4
-
-		print("the list")
-
-		return listOfVars, numTs
-
-
-	def getListOfVariables(self, vars):
-		listOfVars = []
-		for v in vars:
-			listOfVars.append({'label':v, 'value':v})
-
-		return listOfVars
-	
-
-
-	def executeCommand(self, cmd):
-		print("executeCommand", cmd)
-		stdin, stdout, stderr = self.client.exec_command(cmd)
-		output = stdout.read()
-  
-		response = []
-		for line in output:
-			response.append(line)
-		return response
-
-
-	def download_file(self, file: str):
-		self.scp.get(file)
-  
-  
-	def close(self):
-		self.jhost.close()
-		self.scp.close()

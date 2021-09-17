@@ -201,17 +201,18 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 
 			tic = time.perf_counter()
 			
-			#print("Connected!!!")
-			#serverConnect.gatherInitialData()
+
 
 			mochiAddr = _mochiServerAddress + ":1234"
 
 			# Get variables
-			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " variables"
+			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " [\"variables\"]"
 			print(cmd)
 
 			global simulation_variables
-			sim_vars = serverConnect.execute(cmd)
+			_sim_vars = serverConnect.execute(cmd,["variables"])
+			__sim_vars =  _sim_vars["variables"]
+			sim_vars = __sim_vars.split(",")
 			print("sim_vars",sim_vars[0])
 			simulation_variables = serverConnect.getListOfVariables(sim_vars)
 			print("simulation variable", simulation_variables)
@@ -220,12 +221,15 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 			# Get number of ranks
 			global numRanks
 			global mpi_ranks
-			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " numRanks"
+			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " [\"numRanks\"]"
 			print(cmd)
 
-			numRanksOut = serverConnect.execute(cmd)
+			numRanksOut = serverConnect.execute(cmd,["numRanks"])
 			#print("numRanksOut", numRanksOut[0])
-			numRanks = int(numRanksOut[0])
+			#numRanks = int(numRanksOut[0])
+			numRanks =  int(numRanksOut["numRanks"])
+
+
 			print("numRanks", numRanks)
 
 			_mpi_ranks = []
@@ -238,12 +242,13 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 
 
 			# Get number of timesteps
-			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " current_timestep"
+			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " [\"current_timestep\"]"
 			#print(cmd)
-			current_ts = serverConnect.execute(cmd)
+			current_ts = serverConnect.execute(cmd,["current_timestep"])
 
 			global timestep_max
-			timestep_max = int(current_ts[0])
+			#timestep_max = int(current_ts[0])
+			timestep_max = int(current_ts["current_timestep"])
 			#print("current_timestep", timestep_max)
 
 
@@ -251,7 +256,7 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 
 			toc = time.perf_counter()
 			elapsed_time = toc - tic
-			print("Ger Sim vars data  took ", elapsed_time, " seconds")
+			print("\nGet Sim vars data  took ", elapsed_time, " seconds!!!")
 	# 	# Fill in variables
 	# 	# Fill in # numsteps
 
@@ -282,7 +287,6 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 	if ((connected_to_server == True) and (_timestep > 0 and _simVar != None)):
 
-
 		if (_simVar != simVar or timestep != int(_timestep)):
 
 			#
@@ -306,7 +310,7 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 			#ts = int( int(_timestep) / 25 ) * 25	# for HACC
 			ts = int( _timestep) 
 			
-			numRanks = 4	# For testing purposes only
+			#numRanks = 2	# For testing purposes only
 
 			frames = []
 			for r in range(numRanks):
@@ -343,8 +347,8 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 			elapsed_time_0 = toc_0 - tic_0
 			elapsed_time_1 = toc_1 - tic_1
-			print("Getting  data  took ", elapsed_time_0, " seconds")
-			print("Drawing data  took ", elapsed_time_1, " seconds")
+			print("\nGetting data took ", elapsed_time_0, " seconds!!!")
+			print("Drawing data took ", elapsed_time_1, " seconds!!!")
 
 
 
@@ -404,77 +408,12 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 			elapsed_time_1 = toc_0 - tic_0
 			elapsed_time_2 = toc_1 - tic_1
 
-			print("updateSingleRank gather data  took ", elapsed_time_1, " seconds")
-			print("updateSingleRank draw data  took ", elapsed_time_2, " seconds")
+			print("\nupdateSingleRank gather data took ", elapsed_time_1, " seconds!!!")
+			print("updateSingleRank draw data took ", elapsed_time_2, " seconds!!!")
 
 
 	return children1, children2
 	
-
-'''
-@app.callback(
-	Output('graph_3d_rank', 'children'),
-	Input(component_id='mpiRank', component_property='value'),
-	[State('graph_3d_rank', 'children')]
-)
-def updateSingleRank( _mpiRank, children):
-	global simVar
-	global timestep
-	global mpiViewRank
-
-	_simVar = simVar
-	_timestep = timestep
-
-	if _timestep > 0:
-		print("updateSingleRank")
-		print(_mpiRank)
-
-		tic_0 = time.perf_counter()
-
-		global serverConnect
-		#ts = int( int(_timestep) / 25 ) * 25
-		ts = int( int(_timestep) ) 
-
-		if _mpiRank == None:
-			myRank = 0
-		else:
-			myRank = int(_mpiRank)
-
-		df = serverConnect.getSimRankData( _simVar, ts, myRank)
-
-		toc_0 = time.perf_counter()
-
-
-
-		tic_1 = time.perf_counter()
-
-		fig = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
-										mode ='markers',
-										marker = dict(
-											size = 1,
-											color=df[_simVar],
-											colorscale ='turbo',
-											opacity = 1
-										))])
-		fig.update_layout(margin=dict(l=0, r=0, b=0, t=0), template='plotly_dark', height=700)
-
-		children.clear()
-		children.append( dcc.Graph(figure=fig) )
-
-		toc_1 = time.perf_counter()
-
-		elapsed_time_1 = toc_0 - tic_0
-		elapsed_time_2 = toc_1 - tic_1
-
-		print("updateSingleRank gather data  took ", elapsed_time_1, " seconds")
-		print("updateSingleRank draw data  took ", elapsed_time_2, " seconds")
-
-	return children
-'''
-
-
-
-
 
 
 if __name__ == '__main__':
