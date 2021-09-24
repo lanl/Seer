@@ -1,4 +1,5 @@
 import time
+
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
@@ -16,15 +17,17 @@ import Seer_dash_helper as sdh
 
 
 # Some global variables
-mochi_on = True			# Temporaty value
+mochi_on = True			# Temporaty value, on by default
+
 connected_to_server = False           # initially not connected
-timestep_loaded = -1                  # initially not loaded    
 timestep_current = 0                  # initally 0 but nothing there
-timestep_max = 0
+
 
 simulation_variables = []
-mpi_ranks = []
 numRanks = 0
+mpi_ranks = []
+timestep_max = 0
+
 
 simVar = ""
 timestep = -1
@@ -161,17 +164,19 @@ app.layout = html.Div([
 ])
 
 
+
+
 @app.callback(
 	[Output('simVar', 'options'),
 	 Output('mpiRank', 'options'),
 	 Output('timestep', 'max')],
 	[Input(component_id='submit_var',component_property='n_clicks'),
-	Input(component_id='loginNode', component_property='value'),
-	Input(component_id='mochiNodeAddress', component_property='value'),
-	Input(component_id='mochiServerAddress', component_property='value'),
-	Input(component_id='username', component_property='value'),
-	Input(component_id='dbName', component_property='value')]
-)
+	 Input(component_id='loginNode', component_property='value'),
+	 Input(component_id='mochiNodeAddress', component_property='value'),
+	 Input(component_id='mochiServerAddress', component_property='value'),
+	 Input(component_id='username', component_property='value'),
+	 Input(component_id='dbName', component_property='value')]
+	)
 def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, _userName, _dbName):
 	global mochi_on
 	global connected_to_server
@@ -185,52 +190,63 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 			raise PreventUpdate
 		else:
 			# remove leading and trailing spaces
-			_loginNode = _loginNode.strip()
-			_mochiNodeAddress = _mochiNodeAddress.strip()
+			_loginNode 			= _loginNode.strip()
+			_mochiNodeAddress 	= _mochiNodeAddress.strip()
 			_mochiServerAddress = _mochiServerAddress.strip()
-			_userName = _userName.strip()
-			_dbName = _dbName.strip()
+			_userName 			= _userName.strip()
+			_dbName 			= _dbName.strip()
 
-			print(_loginNode)
+			jsonData = sdh.readJson()
+			if jsonData == None:
+				print("config.json is missing!!!")
+				exit()
+			
+			mochiAddr = _mochiServerAddress + ":" + jsonData["system"]["mochi-port"]
+
+			print("_loginNode",_loginNode)
 			print("_mochiNodeAddress",_mochiNodeAddress)
+			print("mochiAddr",mochiAddr)
 			print("_mochiServerAddress",_mochiServerAddress)
-			print(_userName)
-			print(_dbName)
+			print("_userName",_userName)
+			print("_dbName",_dbName)
 
-			serverConnect.connect(_loginNode, _mochiNodeAddress, _mochiServerAddress, _userName, _dbName)
 
 			tic = time.perf_counter()
-			
 
 
-			mochiAddr = _mochiServerAddress + ":1234"
+			#
+			# Connect to server
+			serverConnect.connect(_loginNode, _mochiNodeAddress, _mochiServerAddress, _userName, _dbName)
 
+
+			#
 			# Get variables
-			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " [\"variables\"]"
-			print(cmd)
-
 			global simulation_variables
-			_sim_vars = serverConnect.execute(cmd,["variables"])
+
+			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " [\"variables\"]"
+			#print(cmd)
+
+			_sim_vars  = serverConnect.execute(cmd,["variables"])
 			__sim_vars =  _sim_vars["variables"]
-			sim_vars = __sim_vars.split(",")
-			print("sim_vars",sim_vars[0])
+			sim_vars   = __sim_vars.split(",")
+			#print("sim_vars",sim_vars[0])
+
 			simulation_variables = serverConnect.getListOfVariables(sim_vars)
 			print("simulation variable", simulation_variables)
 
 
+			#
 			# Get number of ranks
 			global numRanks
 			global mpi_ranks
+
 			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " [\"numRanks\"]"
-			print(cmd)
+			#print(cmd)
 
 			numRanksOut = serverConnect.execute(cmd,["numRanks"])
-			#print("numRanksOut", numRanksOut[0])
-			#numRanks = int(numRanksOut[0])
 			numRanks =  int(numRanksOut["numRanks"])
-
-
 			print("numRanks", numRanks)
+
 
 			_mpi_ranks = []
 			_mpi_ranks.extend(range(0, numRanks))
@@ -241,26 +257,34 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 
 
 
+			#
 			# Get number of timesteps
+			global timestep_max
+
 			cmd = "source runSeerClientScript.sh " + mochiAddr + " " + _dbName + " [\"current_timestep\"]"
 			#print(cmd)
-			current_ts = serverConnect.execute(cmd,["current_timestep"])
 
-			global timestep_max
-			#timestep_max = int(current_ts[0])
+			current_ts = serverConnect.execute(cmd,["current_timestep"])
 			timestep_max = int(current_ts["current_timestep"])
 			#print("current_timestep", timestep_max)
 
 
+
 			connected_to_server = True
 
+
+			#
+			# Compute time
 			toc = time.perf_counter()
+
 			elapsed_time = toc - tic
-			print("\nGet Sim vars data  took ", elapsed_time, " seconds!!!")
+			print("\nGet Sim vars data  took ", elapsed_time, " seconds!!!\n")
+
 	# 	# Fill in variables
 	# 	# Fill in # numsteps
 
 	return simulation_variables, mpi_ranks, timestep_max
+
 
 
 
@@ -272,60 +296,77 @@ def updateSimVars(n_clicks, _loginNode, _mochiNodeAddress, _mochiServerAddress, 
 	 Input(component_id='timestep', component_property='value')],
 	[State('graph_3d', 'children'),
 	 State('graph_3d_rank', 'children')]
-)
+	)
 def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
-	#if _timestep > 0 and _simVar != None:
-
 	global simVar
 	global timestep
 	global mpiViewRank
 	global numRanks
 	global serverConnect
 
-
 	oneRankUpdate = False
+
 
 	if ((connected_to_server == True) and (_timestep > 0 and _simVar != None)):
 
 		if (_simVar != simVar or timestep != int(_timestep)):
-
 			#
 			# Get all the ranks
 			#
+
+			oneRankUpdate = True	# force one rank update if variables change
+
+
+			#
+			# Set these parameters
+			simVar = _simVar
+			timestep = int(_timestep)
+			jsonData = sdh.readJson()
+
 			print("\n\n----------------------------------")
 			print("update Global View")
 			print("timestep", _timestep)
 			print("simVar",_simVar)
 
-			# Set these parameters
-			simVar = _simVar
-			timestep = int(_timestep)
-
-			oneRankUpdate = True	# force one rank update if variables change
-
-
-			tic_0 = time.perf_counter()	# start
-
 			
-			#ts = int( int(_timestep) / 25 ) * 25	# for HACC
-			ts = int( _timestep) 
+
+
+			tic_0 = time.perf_counter()
+
+			#
+			# Get the data for the timestep and variable
 			
-			#numRanks = 2	# For testing purposes only
+			ts_increment = int(jsonData["simulation"]["timestep-increment"])
+			#ts = int( _timestep)
+			ts = int( int(_timestep) / ts_increment ) * ts_increment	
+			
+			
+			# frames = []
+			# #numRanks = 2	# For testing purposes only
+			# # TODO: At some point, switch to gather all the ranks at the same time!!!
+			# for r in range(numRanks):
+			# 	_df = serverConnect.getSimRankData( _simVar, ts, int(r))
+			# 	frames.append(_df)
+			# df = pd.concat(frames)
 
-			frames = []
-			for r in range(numRanks):
-				_df = serverConnect.getSimRankData( _simVar, ts, int(r))
-				frames.append(_df)
-			df = pd.concat(frames)
+			df = serverConnect.getSimMultiRankData( _simVar, ts, numRanks)
 
+
+			# Prevent overloading of plotly 3D plot
 			if len(df.index) > 500000:
-				df = df.sample(n = 250000)
-
-			toc_0 = time.perf_counter()	# stop
+				df = df.sample(n = 500000)
 
 
+			toc_0 = time.perf_counter()
 
-			tic_1 = time.perf_counter() # start
+
+
+
+
+			tic_1 = time.perf_counter()
+
+			#
+			# Create a viz for the data
 
 			fig1 = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
 											mode ='markers',
@@ -347,44 +388,54 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 			elapsed_time_0 = toc_0 - tic_0
 			elapsed_time_1 = toc_1 - tic_1
-			print("\nGetting data took ", elapsed_time_0, " seconds!!!")
-			print("Drawing data took ", elapsed_time_1, " seconds!!!")
+			print("\nGetting all the data took ", elapsed_time_0, " seconds!!!")
+			print("Drawing all the data took ", elapsed_time_1, " seconds!!!\n")
 
 
 
 		if (mpiViewRank != _mpiRank or oneRankUpdate == True):
 			#
-			# Get individual rank
-			# 		print(_timestep)
+			# Individual rank viz
+			#
+
+			mpiViewRank = _mpiRank
+
+
 			print("\n\n----------------------------------")
 			print("update one rank View")
 			print("timestep", _timestep)
 			print("simVar",_simVar)
 			print("mpiRank",_mpiRank)
 
-			mpiViewRank = mpiViewRank
+			
 
 
+			tic_0 = time.perf_counter()	 
 
-			tic_0 = time.perf_counter()	# start 
 
-			#ts = int( int(_timestep) / 25 ) * 25	# HACC
+			#
+			# Get data for the rank
+
 			ts = int( int(_timestep) ) 
+			#ts = int( int(_timestep) / 25 ) * 25	# HACC
 
 			if _mpiRank == None:
 				myRank = 0
 			else:
 				myRank = int(_mpiRank)
 
+
 			df = serverConnect.getSimRankData( _simVar, ts, myRank)
 
-			toc_0 = time.perf_counter()	# stop
+			toc_0 = time.perf_counter()
 
 
 
 
-			tic_1 = time.perf_counter() # start
+			tic_1 = time.perf_counter()
 
+			#
+			# Update the viz for one rank
 
 			fig2 = go.Figure(data=[go.Scatter3d(x=df['x'], y=df['y'], z=df['z'],
 											mode ='markers',
@@ -408,8 +459,8 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 			elapsed_time_1 = toc_0 - tic_0
 			elapsed_time_2 = toc_1 - tic_1
 
-			print("\nupdateSingleRank gather data took ", elapsed_time_1, " seconds!!!")
-			print("updateSingleRank draw data took ", elapsed_time_2, " seconds!!!")
+			print("\nGetting data for a single rank took ", elapsed_time_1, " seconds!!!")
+			print("Drawing a single rank took ", elapsed_time_2, " seconds!!!\n\n")
 
 
 	return children1, children2

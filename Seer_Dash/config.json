@@ -1,0 +1,25 @@
+{
+    "system" :
+    {
+        "comment": "Only change if you REALLY know what you are doing!!!",
+        
+        "mochi-port" : "1234",
+
+        "ssh-max-reconnect" : 5,
+        "vm-transport-port" : 22,
+
+        "data-seperator" : "*_*_*",
+        "data-field-seperator" : ",",
+
+        "simulatneous-data-gathers" : -1,
+        "simulatneous-data-gathers-comment" : "-1 is for all, mininum is 1"
+    },
+
+    "simulation" :
+    {
+        "timestep-increment" :  1,
+        "timestep-increment-comment" :  "some sims specify increments in terms of 25,50, ..."
+    },
+
+    "comment" : "This file needs to be in the same folder as Seer_dash and Seer_dash_helper"
+}

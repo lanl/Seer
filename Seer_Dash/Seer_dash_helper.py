@@ -5,9 +5,23 @@ import re
 import time
 import paramiko
 import itertools
+import json
+import os.path
 
 from paramiko import SSHClient, AutoAddPolicy
 from scp import SCPClient, SCPException
+
+
+def readJson():
+	fileExists = os.path.exists('config.json')
+
+	if fileExists:
+		with open('config.json') as f:
+			data = json.load(f)
+		return data
+	else:
+		return None
+
 
 class Seer_Dash_Helper:
 	def __init__(self):
@@ -57,7 +71,7 @@ class Seer_Dash_Helper:
 	def getListOfVariables(self, vars):
 		listOfVars = []
 		for v in vars:
-			listOfVars.append({'label':v, 'value':v})
+			listOfVars.append({'label':v.strip(), 'value':v.strip()})
 
 		return listOfVars
 	
@@ -92,7 +106,7 @@ class Seer_Dash_Helper:
 		vmtransport = self.vm.get_transport()
 
 
-		dest_addr = (self.mochiNodeAddr, 22)
+		dest_addr  = (self.mochiNodeAddr, 22)
 		local_addr = (self.loginNodeAddr, 22)
 
 		vmchannel = vmtransport.open_channel("direct-tcpip", dest_addr, local_addr)
@@ -111,7 +125,7 @@ class Seer_Dash_Helper:
 
 		toc = time.perf_counter()
 		elapsed_time = toc - tic
-		print("connecting established, took ", elapsed_time, " seconds\n\n")
+		print("connecting took ", elapsed_time, " seconds\n\n")
 
 		# For copying files
 		self.scp = SCPClient(self.vm.get_transport())
@@ -125,7 +139,6 @@ class Seer_Dash_Helper:
 
 		max_reconnect = 5
 		reconnect = 0
-		#output_data = ""
 		outputDic = {}
 
 		while reconnect < max_reconnect:
@@ -186,7 +199,7 @@ class Seer_Dash_Helper:
 			if sherr and cmd in sherr[0]:
 				sherr.pop(0)
 
-			#output_data = []
+
 			#print("len(shout)",len(shout))
 			if len(shout) != 0:
 				storeOutput = False
@@ -221,6 +234,122 @@ class Seer_Dash_Helper:
 
 
 
+	def getSimMultiRankData(self, var_name, ts, numRanks):
+		print("\ngetSimRankData")
+		print("var_name", var_name)
+		print("ts", ts)
+		print("numRanks", numRanks)
+		
+
+
+		tic_0 = time.perf_counter()
+
+
+		#
+		# Retreive the data
+
+
+
+		#
+		# Create the keys
+
+		_mpi_ranks = []
+		_mpi_ranks.extend(range(0, numRanks))		
+
+
+		keys = []
+		for r in _mpi_ranks:
+			keys.append("x_ts_" + str(ts) + "_rank_" + str(r))
+			keys.append("y_ts_" + str(ts) + "_rank_" + str(r))
+			keys.append("z_ts_" + str(ts) + "_rank_" + str(r))
+			keys.append(var_name + "_ts_" + str(ts) + "_rank_" + str(r))
+
+
+		keyString = self.listToString(keys)
+		#print("keys:",keys)
+		#print(keyString)
+
+
+
+		#
+		# Create Command
+
+		jsonData = readJson()
+		_mochiServerAddress = self.mochiServerAddress + ":" + jsonData["system"]["mochi-port"]
+		#_mochiServerAddress = self.mochiServerAddress + ":1234"
+
+		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + keyString
+		#print("cmd:",cmd)
+	
+
+
+		#
+		# Run command
+
+		outputDic = self.execute(cmd, keys)
+
+
+		# print(outputDic)
+		# print(keys)
+
+		# print(keys[0], outputDic[keys[0]])
+		# print(keys[1], outputDic[keys[1]])
+		# print(keys[2], outputDic[keys[2]])
+		# print(keys[3], outputDic[keys[3]])
+
+
+		toc_0 = time.perf_counter()
+		
+
+
+
+		tic_1 = time.perf_counter()
+
+		#
+		# Deserialize data
+		
+
+		#
+		# Get the data into a list
+		frames = []
+		for r in _mpi_ranks:
+			flat_x   = outputDic[keys[r*4 + 0]].split(',')
+			flat_y   = outputDic[keys[r*4 + 1]].split(',')
+			flat_z   = outputDic[keys[r*4 + 2]].split(',')
+			flat_var = outputDic[keys[r*4 + 3]].split(',')
+
+			#
+			# Convert to float from string
+			_temp_x = [float(ele) for ele in flat_x]
+			_temp_y = [float(ele) for ele in flat_y]
+			_temp_z = [float(ele) for ele in flat_z]
+			_temp_var = [float(ele) for ele in flat_var]
+
+			#
+			# Create a dataframe for the data
+			df = pd.DataFrame( list(zip(_temp_x, _temp_y, _temp_z, _temp_var)), columns =['x', 'y', 'z', var_name] )
+			df['dummy_size'] = 0.01
+
+			frames.append(df)
+
+		df = pd.concat(frames)
+
+
+		toc_1 = time.perf_counter()
+
+
+		elapsed_time_0 = toc_0 - tic_0
+		elapsed_time_1 = toc_1 - tic_1
+		print("getting var data took ", elapsed_time_0, " seconds")
+		print("deserialize var data took & df ", elapsed_time_1, " seconds\n\n")
+
+
+		return df
+
+
+
+	
+
 	def getSimRankData(self, var_name, ts, myRank=0):
 		print("\n\getSimRankData")
 		print("var_name", var_name)
@@ -228,15 +357,16 @@ class Seer_Dash_Helper:
 		print("myRank", myRank)
 		
 
-		_mochiServerAddress = self.mochiServerAddress + ":1234"
 
 		tic_0 = time.perf_counter()
 
-		# pos_x = []
-		# pos_y = []
-		# pos_z = []
-		# var_data = []
 
+		#
+		# Retreive the data
+
+
+		#
+		# Create the keys
 		
 		keys = []
 		keys.append("x_ts_" + str(ts) + "_rank_" + str(myRank))
@@ -248,11 +378,22 @@ class Seer_Dash_Helper:
 		#print("keys:",keys)
 		#print(keyString)
 
+
+		#
+		# Create Command
+
+		jsonData = readJson()
+		_mochiServerAddress = self.mochiServerAddress + ":" + jsonData["system"]["mochi-port"]
+		#_mochiServerAddress = self.mochiServerAddress + ":1234"
+
 		cmd = "source runSeerClientScript.sh " + _mochiServerAddress + " " + self._dbName + " " + keyString
 		#print("cmd:",cmd)
-		
+	
+		#
+		# Run command
 
 		outputDic = self.execute(cmd, keys)
+
 
 		# print(outputDic)
 		# print(keys)
@@ -262,18 +403,27 @@ class Seer_Dash_Helper:
 		# print(keys[2], outputDic[keys[2]])
 		# print(keys[3], outputDic[keys[3]])
 
+
 		toc_0 = time.perf_counter()
 		
 
 
-		# Deserialize data
+
 		tic_1 = time.perf_counter()
 
+		#
+		# Deserialize data
+		
+
+		#
+		# Get the data into a list
 		flat_x   = outputDic[keys[0]].split(',')
 		flat_y   = outputDic[keys[1]].split(',')
 		flat_z   = outputDic[keys[2]].split(',')
 		flat_var = outputDic[keys[3]].split(',')
 
+		#
+		# Convert to float from string
 		_temp_x = [float(ele) for ele in flat_x]
 		_temp_y = [float(ele) for ele in flat_y]
 		_temp_z = [float(ele) for ele in flat_z]
@@ -283,22 +433,22 @@ class Seer_Dash_Helper:
 
 
 
-		tic_4 = time.perf_counter()
+		tic_2 = time.perf_counter()
 
+		#
+		# Create a dataframe for the data
 		df = pd.DataFrame( list(zip(_temp_x, _temp_y, _temp_z, _temp_var)), columns =['x', 'y', 'z', var_name] )
 		df['dummy_size'] = 0.01
 
-		toc_4 = time.perf_counter()
+		toc_2 = time.perf_counter()
 
 
 
 		elapsed_time_0 = toc_0 - tic_0
-		print("getting var data command  took ", elapsed_time_0, " seconds")
-
 		elapsed_time_1 = toc_1 - tic_1
-		print("deserialize var data command  took ", elapsed_time_1, " seconds")
-
-		elapsed_time_4 = toc_4 - tic_4
-		print("convert to df var data command  took ", elapsed_time_4, " seconds")
+		elapsed_time_2 = toc_2 - tic_2
+		print("getting var data took ", elapsed_time_0, " seconds")
+		print("deserialize var data took ", elapsed_time_1, " seconds")
+		print("convert to df took ", elapsed_time_2, " seconds\n\n")
 
 		return df
