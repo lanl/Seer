@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
-	int numPoints = 100;
+	int numPoints = 25000;
 	int numTimesteps = 300;
 	int numVars = 2;
 
@@ -49,6 +49,10 @@ int main(int argc, char *argv[])
 	float *_x = new float[numPoints]; 
 	float *_y = new float[numPoints]; 
 	float *_z = new float[numPoints]; 
+
+	float *data = new float[numPoints];
+
+	std::vector<float> points;
 
 	std::cout << "numPoints: " << numPoints << std::endl;
 
@@ -107,14 +111,24 @@ int main(int argc, char *argv[])
 
 		clock.start("mainLoop");
 
-		float *data = new float[numPoints];
-		std::vector<float> points;
+		
+		
 
 		// Determine point position
 		for (int i = 0; i < numPoints; i++)
 		{
 			float pnt[3];
-			pnt[0] = i;	pnt[1] = myRank + (t / 10.0);	pnt[2] = myRank;
+
+			//pnt[0] = i;	pnt[1] = myRank + (t / 10.0);	pnt[2] = myRank;
+
+			int _range = 256/numRanks;
+			pnt[0] = rand()%256;	
+			pnt[1] = rand()%256;	
+			pnt[2] = myRank*_range + rand()%_range;
+
+			// pnt[0] = rand()%256;	
+			// pnt[1] = rand()%256;	
+			// pnt[2] = rand()%256;
 
 			_x[i] = pnt[0];
 			_y[i] = pnt[1];
@@ -137,12 +151,14 @@ int main(int argc, char *argv[])
 		//std::cout << myRank << " ~ " << "factComputation - dummy values " << std::endl;
 		for (int i = 0; i < numPoints; i++)
 		{
+			int valFib = myRank%4;
+
 			// Do some computatiton
 			int number = rand()%5 + 1;
-			int f = fib( number*myRank );
+			int f = fib( number*valFib );
 
 			pressureData[i] = f/1000.0;
-			temperatureData[i] = myRank + t * 0.05;
+			temperatureData[i] = myRank;// + t * 0.05;
 		}
 
 		clock.stop("factComp");
@@ -229,9 +245,22 @@ int main(int argc, char *argv[])
 		if (myRank == 0)
 			std::cout << myRank << " ~ ts: " << t << std::endl;
 
+
+		points.clear();
+
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
+
+
+	delete[] pressureData;
+	delete[] temperatureData;
+	delete[] data;
+
+	delete[] _x;
+	delete[] _y;
+	delete[] _z;
+
 
 
   #ifdef SENSEI_ENABLED
