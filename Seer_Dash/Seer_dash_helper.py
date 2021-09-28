@@ -234,11 +234,11 @@ class Seer_Dash_Helper:
 
 
 
-	def getSimMultiRankData(self, var_name, ts, numRanks):
-		print("\ngetSimRankData")
+	def getSimMultiRankData(self, var_name, ts, _mpi_ranks):
+		print("\getSimMultiRankData")
 		print("var_name", var_name)
 		print("ts", ts)
-		print("numRanks", numRanks)
+		print("_mpi_ranks", _mpi_ranks)
 		
 
 
@@ -253,8 +253,8 @@ class Seer_Dash_Helper:
 		#
 		# Create the keys
 
-		_mpi_ranks = []
-		_mpi_ranks.extend(range(0, numRanks))		
+		#_mpi_ranks = []
+		#_mpi_ranks.extend(range(0, numRanks))		
 
 
 		keys = []
@@ -351,7 +351,8 @@ class Seer_Dash_Helper:
 	
 
 	def getSimRankData(self, var_name, ts, myRank=0):
-		print("\n\getSimRankData")
+		#Should not be needed anymore!!!
+		print("\ngetSimRankData")
 		print("var_name", var_name)
 		print("ts", ts)
 		print("myRank", myRank)

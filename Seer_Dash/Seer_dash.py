@@ -28,6 +28,12 @@ numRanks = 0
 mpi_ranks = []
 timestep_max = 0
 
+#TODO:
+#simulation_metrics_ts = []
+#simulation_metrics_rank = []
+simulation_metrics_ts = [{"label": 'k', "value": 'k'}, {"label": 'l', "value": 'l'}, {"label": 'm', "value": 'm'}]
+simulation_metrics_rank = [{"label": 'k', "value": 'k'}, {"label": 'l', "value": 'l'}, {"label": 'm', "value": 'm'}]
+
 
 simVar = ""
 timestep = -1
@@ -39,20 +45,21 @@ serverConnect = sdh.Seer_Dash_Helper()
 
 
 # Initialize the app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SOLAR])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SLATE])
 
 app.layout = html.Div([
 	# Header
 	html.H1(children='Seer Dashboard', style={'text-align':'left', 'marginLeft': 15, 'marginTop': 20}),
-	html.Hr(style={'marginLeft': 5, 'marginRight': 5, 'height': '2px', "color" :"white", "background-color" : "white"}),
+	html.Hr(style={'marginLeft': 5, 'marginRight': 5, 'height': '2px', "background-color" : "white"}),
 
-	html.Div(children=[
-		# First Row, First Column
+
+	# First Row, First Column
+	html.Div(children=[	
 		html.Div([
 
 			# Connection Prameters
 			html.Div([
-				html.H5(children='Connection Parameters', style={'text-align':'left', 'marginLeft': 2, 'marginTop': 20}),
+				html.H5(children='Connection Parameters', style={'text-align':'left', 'marginLeft': 2, 'marginTop': 10}),
 				html.Hr(style={'marginLeft': 1, 'marginRight': 1, 'height': '1px', 'border': '0px', "color" :"white", "background-color" : "white"}),
 
 				html.Div([
@@ -106,18 +113,20 @@ app.layout = html.Div([
 				], style={'marginLeft': 15,'marginBottom': 20})
 			]),
 
-			# Simulation Parameters
+
+			# Simulation Variables
 			html.Div([
 				html.H5(children='Simulation Variables', style={'text-align':'left', 'marginLeft': 2, 'marginTop': 40}),
 				html.Hr(style={'marginLeft': 1, 'marginRight': 1, 'height': '1px', 'border': '0px', "color" :"white", "background-color" : "white"}),
 				
 				html.Div([
-					html.Label('Select variable: '),
+					#html.Label('Select variable: '),
 					dcc.Dropdown(
 						id='simVar',
-						options = simulation_variables
+						options = simulation_variables,
+						placeholder="Select Variable"
 					)
-				], style={'marginLeft': 15, 'marginBottom': 20, 'width':'90%'}),
+				], style={'marginLeft': 15, 'marginBottom': 15, 'width':'90%'}),
 
 
 				html.Div([
@@ -130,37 +139,102 @@ app.layout = html.Div([
 						value=timestep_current
 					)
 				], style={'marginLeft': 15, 'width':'90%'})
-
 			])
 		])
-	], style={'marginLeft': 20, 'marginTop': 20, 'width':'250px', 'height':'800px', 'vertical-align': 'top', 'display': 'inline-block'}),
+	], style={'marginLeft': 20, 'marginTop': 20, 'width':'250px', 'height':'600px', 'vertical-align': 'top', 'display': 'inline-block'}),
 
 
-	# First Row, Second Column
-	html.Div(children=[
-		
+	# First Row, Second Column (3D plots)
+	html.Div(children=[	
 		html.Div([
 			html.Div([
-					html.Label('Select MPI Rank: '),
+					#html.Label('Select MPI Rank: '),
 					dcc.Dropdown(
 						id='mpiRank',
-						options = mpi_ranks
+						options = mpi_ranks,
+						placeholder="Select MPI Rank",
 					)
-				], style={'marginTop': 20, 'marginLeft': 25, 'marginBottom': 20, 'width':'15%'}),
+				], style={'marginTop': 20, 'marginLeft': 25, 'marginBottom': 20, 'width':'25%'}),
 
 
-			# intially empty for 3d rank
+			# intially empty for one 3d rank
 			html.Div([
-			], id='graph_3d_rank', style={'marginLeft': 40, 'marginTop': 10, 'width':'90%', 'display': 'inline-block',  'height':'450px'})
+			], id='graph_3d_rank', style={'marginLeft': 40, 'marginTop': 10, 'width':'80%', 'display': 'inline-block'})
 
-		], style={'width':'60%', 'display':'inline-block', 'height':'600px'}),
+		], style={'width':'50%', 'display':'inline-block', 'height':'550px', 'background-color':'gray'}),
 
 
 		# intially empty for all ranks
 		html.Div([
-		], id='graph_3d', style={'marginLeft': 40, 'width':'30%', 'display': 'inline-block', 'height':'600px', 'vertical-align': 'top'}),
+		], id='graph_3d', style={'marginLeft': 40, 'width':'45%', 'display': 'inline-block', 'height':'550px', 'vertical-align': 'top', 'background-color':'gray'}),
+	], style={'marginLeft': 20, 'marginTop': 20, 'width':'80%', 'height':'600px', 'display': 'inline-block'}),
 
-	], style={'marginLeft': 20, 'marginTop': 20, 'width':'85%', 'display': 'inline-block'})
+
+
+
+	# View Timer metrics
+	#html.Hr(style={'marginLeft': 5, 'marginRight': 5, 'height': '1px', "color" :"gray", "background-color" : "white", 'width':'50%'}),
+
+	html.Div(children=[
+		# Simulation Metrics
+			html.Div([
+				html.H5(children='Add Metric', style={'text-align':'left', 'marginLeft': 20}),
+
+				html.Div([
+					dcc.Input(
+						id='newMetric',
+						placeholder='Enter new metric',
+						type='text',
+						value=''
+					)
+				], style={'marginLeft': 15, 'marginBottom': 20, 'width':'15%'}),
+			],style={'marginTop':-10, 'marginLeft': 15, 'width':'250px', 'display':'inline-block', 'background-color':'gray'}),
+
+
+			html.Div([
+				html.H5(children='Metric/s per Timestep', style={'text-align':'left', 'marginLeft': 20, 'marginTop': 10}),
+				
+				html.Div([
+					#html.Label('Select Metric: '),
+					dcc.Dropdown(
+						id='simMetricTs',
+						options = simulation_metrics_ts,
+						placeholder="Select Metric/s",
+						multi=True
+					),
+
+					# intially empty, metrics per ts
+					html.Div([
+					], id='metrics_per_ts', style={'marginLeft': 40, 'marginTop': 10, 'width':'80%', 'display': 'inline-block'})
+				], style={'marginLeft': 15, 'marginBottom': 20, 'width':'90%'}),
+
+			],style={'marginLeft': 25, 'width':'40%', 'display':'inline-block', 'background-color':'gray'}),
+
+
+			html.Div([
+				html.H5(children='Metric/s per Rank', style={'text-align':'left', 'marginLeft': 20, 'marginTop': 10}),
+				
+				html.Div([
+					#html.Label('Select Metric: '),
+					dcc.Dropdown(
+						id='simMetricRank',
+						options = simulation_metrics_rank,
+						placeholder="Select Metric/s",
+						multi=True
+					),
+
+					# intially empty, metrics/ts
+					html.Div([
+					], id='metrics_per_rank', style={'marginLeft': 40, 'marginTop': 10, 'width':'90%', 'display': 'inline-block'})
+
+				], style={'marginLeft': 25, 'marginBottom': 20})
+
+			],style={'marginLeft': 15, 'width':'40%', 'marginLeft': 40, 'display':'inline-block', 'background-color':'gray'})
+
+	],style={}),
+
+
+
 ])
 
 
@@ -349,7 +423,9 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 			# 	frames.append(_df)
 			# df = pd.concat(frames)
 
-			df = serverConnect.getSimMultiRankData( _simVar, ts, numRanks)
+			mpi_ranks = []
+			mpi_ranks.extend(range(0, numRanks))		
+			df = serverConnect.getSimMultiRankData( _simVar, ts, mpi_ranks)
 
 
 			# Prevent overloading of plotly 3D plot
@@ -393,6 +469,8 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 
 
+
+
 		if (mpiViewRank != _mpiRank or oneRankUpdate == True):
 			#
 			# Individual rank viz
@@ -425,7 +503,9 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 				myRank = int(_mpiRank)
 
 
-			df = serverConnect.getSimRankData( _simVar, ts, myRank)
+			#df = serverConnect.getSimRankData( _simVar, ts, myRank)
+			mpi_ranks = [myRank]
+			df = serverConnect.getSimMultiRankData( _simVar, ts, mpi_ranks)
 
 			toc_0 = time.perf_counter()
 
