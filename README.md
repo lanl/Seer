@@ -184,6 +184,8 @@ Scripts for launching sims are located in the script folder:
 # Citing Seer
 Pascal Grosset, Jesus Pulido, James Ahrens, "Personalized In Situ Steering for Analysis and Visualization",  In Proceedings of the Workshop on In Situ Infrastructures for Enabling Extreme-Scale Analysis and Visualization (ISAV '20). Association for Computing Machinery, New York, NY, USA. DOI:https://doi.org/10.1145/3426462.3426463
 
+Pascal Grosset and James Ahrens. 2021. Lightweight Interface for In Situ Analysis and Visualization of Particle Data. In ISAV'21: In Situ Infrastructures for Enabling Extreme-Scale Analysis and Visualization (ISAV'21). Association for Computing Machinery, New York, NY, USA, 12–17. DOI:https://doi.org/10.1145/3490138.3490143
+
 The Seer paper is available at: https://permalink.lanl.gov/object/tr?what=info:lanl-repo/lareport/LA-UR-20-26538
 
 # Copyright
