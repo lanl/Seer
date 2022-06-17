@@ -353,6 +353,7 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 
 			# Prevent overloading of plotly 3D plot
+			
 			if len(df.index) > 500000:
 				df = df.sample(n = 500000)
 
@@ -388,6 +389,7 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 			elapsed_time_0 = toc_0 - tic_0
 			elapsed_time_1 = toc_1 - tic_1
+			print("getSimMultiRankData number of rows:",  len(df.index))
 			print("\nGetting all the data took ", elapsed_time_0, " seconds!!!")
 			print("Drawing all the data took ", elapsed_time_1, " seconds!!!\n")
 
@@ -426,6 +428,7 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 
 			df = serverConnect.getSimRankData( _simVar, ts, myRank)
+			
 
 			toc_0 = time.perf_counter()
 
@@ -458,6 +461,8 @@ def updateFig(_mpiRank, _simVar, _timestep, children1, children2):
 
 			elapsed_time_1 = toc_0 - tic_0
 			elapsed_time_2 = toc_1 - tic_1
+
+			print("getSimRankData number of rows:",  len(df.index))
 
 			print("\nGetting data for a single rank took ", elapsed_time_1, " seconds!!!")
 			print("Drawing a single rank took ", elapsed_time_2, " seconds!!!\n\n")

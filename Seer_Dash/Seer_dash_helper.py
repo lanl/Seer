@@ -155,6 +155,8 @@ class Seer_Dash_Helper:
 
 			toc_1 = time.perf_counter()
 
+			print(self.stdout)
+
 
 			
 			tic_2 = time.perf_counter()
@@ -163,7 +165,7 @@ class Seer_Dash_Helper:
 			sherr = []
 			exit_status = 0
 			for line in self.stdout:
-				#print(line)
+				print(line)
 				if str(line).startswith(cmd) or str(line).startswith(echo_cmd):
 					# up for now filled with shell junk from stdin
 					shout = []

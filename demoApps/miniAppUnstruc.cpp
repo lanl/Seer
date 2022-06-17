@@ -85,9 +85,12 @@ int main(int argc, char *argv[])
 
 
 	std::vector<int> indices = Seer::shuffleArray(numPoints);
-	if (myRank == 0)
-		for (int i=0; i<numPoints; i++)
-			std::cout << indices[i] << ", " << std::endl;
+	float _frac = std::max(Seer::getPlotlyPointLimit()/(float)numPoints, 1.0);
+
+
+	// if (myRank == 0)
+	// 	for (int i=0; i<numPoints; i++)
+	// 		std::cout << indices[i] << ", " << std::endl;
 
 
 	Seer::Timer clock;
@@ -96,6 +99,8 @@ int main(int argc, char *argv[])
 		std::cout << "Stating loop..." << std::endl;
 
 	MPI_Barrier(MPI_COMM_WORLD);
+
+
 
 	for (int t = 0; t < numTimesteps; t++)
 	{
@@ -109,9 +114,11 @@ int main(int argc, char *argv[])
 		if (myRank == 0)
 			std::cout << " after timestepInit" << std::endl;
 
-		clock.start("mainLoop");
 
-		
+
+
+
+		clock.start("mainLoop");
 		
 
 		// Determine point position
@@ -165,47 +172,47 @@ int main(int argc, char *argv[])
 		clock.stop("mainLoop");
 
 
+
 		MPI_Barrier(MPI_COMM_WORLD);
 		if (myRank == 0)
 			std::cout << " store results ..." << std::endl;
+
 
 
 		std::string tempKey, tempValue;
 
 		tempKey = "mainLoop_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
 		tempValue = std::to_string(clock.getDuration("mainLoop"));
-		//insitu.simEvents[tempKey] = tempValue;
 		insitu.recordEvent(tempKey, tempValue);
 
 		tempKey = "factComp_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
 		tempValue = std::to_string(clock.getDuration("factComp"));
 		insitu.recordEvent(tempKey, tempValue);
-		//insitu.simEvents[tempKey] = tempValue;
-
 
 
 
 		tempKey = "pressure_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
-		tempValue = Seer::serializeArray(pressureData, numPoints, 0.5, indices);
-		//std::cout << "pressureData- tempValue:" << pressureData << tempValue << std::endl;
+		tempValue = Seer::serializeArray(pressureData, numPoints, _frac, indices);
 		insitu.recordEvent(tempKey, tempValue);
 
 		tempKey = "temperature_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
-		tempValue = Seer::serializeArray(temperatureData, numPoints, 0.5, indices);
+		tempValue = Seer::serializeArray(temperatureData, numPoints, _frac, indices);
 		insitu.recordEvent(tempKey, tempValue);
 
+
+
 		tempKey = "x_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
-		tempValue = Seer::serializeArray(_x, numPoints, 0.5, indices);
+		tempValue = Seer::serializeArray(_x, numPoints, _frac, indices);
 		insitu.recordEvent(tempKey, tempValue);
 
 		tempKey = "y_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
-		tempValue = Seer::serializeArray(_y, numPoints, 0.5, indices);
+		tempValue = Seer::serializeArray(_y, numPoints, _frac, indices);
 		insitu.recordEvent(tempKey, tempValue);
 
 		tempKey = "z_ts_" + std::to_string(t) + "_rank_" +  std::to_string(myRank);
-		tempValue = Seer::serializeArray(_z, numPoints, 0.5, indices);
+		tempValue = Seer::serializeArray(_z, numPoints, _frac, indices);
 		insitu.recordEvent(tempKey, tempValue);
-		//insitu.simEvents["mainLoop"] = std::to_string(clock.getDuration("mainLoop"));
+
 
 
 	  #ifdef  CATALYST_ENABLED

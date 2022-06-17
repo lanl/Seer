@@ -20,7 +20,7 @@ inline bool fileExisits(std::string filename)
 }
 
 
-std::vector<int> shuffleArray(int numPoints)
+inline std::vector<int> shuffleArray(int numPoints)
 {
     std::vector<int> indices;
     indices.resize(numPoints);
@@ -33,7 +33,7 @@ std::vector<int> shuffleArray(int numPoints)
     return indices;
 }
 
-std::string serializeArray(float *data, int numPoints, float percentage, std::vector<int> indices)
+inline std::string serializeArray(float *data, int numPoints, float percentage, std::vector<int> indices)
 {
     std::string serializedData = "";
     int numSamplePoints = (int) (percentage*numPoints);
@@ -45,6 +45,11 @@ std::string serializeArray(float *data, int numPoints, float percentage, std::ve
     serializedData += std::to_string(data[ indices[i] ]);
 
     return serializedData;
+}
+
+inline int getPlotlyPointLimit()
+{
+    return 500000;
 }
 
 } // Namespcase Seer

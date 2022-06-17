@@ -1,0 +1,16 @@
+{
+	"log_prefix" : "unstruc_test",
+    
+	"mochi" : true,
+	"mochi-database" :
+	{
+		"name" : "foo_test3",
+		"db-type" : "ldb",
+		"conn-type" : "na+sm",
+		"port" : "",
+		"address" : "na+sm://1111302/0",
+		"multiplex" : 1,
+		"polling-rate" : 4
+	}
+}
+
