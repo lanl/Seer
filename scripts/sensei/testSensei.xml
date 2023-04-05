@@ -1,8 +1,0 @@
-<analysis type="python" script_file="/home/pascal/projects/InSitu_vtkWriters/inSitu/scripts/testPython.py" enabled="1">
-    <initialize_source>
-		numBins=10
-		meshName='mesh'
-		arrayName='cell-data-scalar'
-		arrayCen=1
-    </initialize_source>
-</analysis>
