@@ -11,13 +11,6 @@
 #include "utility.hpp"
 
 
-struct RecvData
-{
-	std::map<std::string, std::string> header;
-    void * data;
-};
-
-
 class Receiver
 {
     std::vector<RecvData> recvData;
@@ -28,17 +21,8 @@ class Receiver
     Receiver(){};
     ~Receiver(){};
 
-    void clean();
-
     int receiveData(char *buffer, size_t dataSize);
 };
-
-
-inline void Receiver::clean()
-{
-
-}
-
 
 
 inline std::map<std::string, std::string> Receiver::deserializeMap(char * buff, size_t headerSize)

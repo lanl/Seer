@@ -9,7 +9,7 @@
 #include <cstring>
 
 #include "utility.hpp"
-
+#include "rpc.hpp"
 
 // Msg: part 1
 // # records
@@ -52,8 +52,17 @@ struct Record
     };
 
     void clean(){
-        delete []header;
-        delete []data;
+        if (header != NULL)
+            delete []header;
+
+        if (data != NULL)
+            delete []data;
+
+        dataSize = 0;
+        headerSize = 0;
+
+        header = NULL;
+        data = NULL;
     };
 };
 
@@ -61,24 +70,40 @@ struct Record
 
 class Sender
 {
+    RPC rpc;
     std::vector<Record> records;
+
+    int myRank;
+    int numRanks;
 
     char * serializeMap(std::map<std::string, std::string> header, int &headerSize);
     void clean();
 
   public:
     Sender(){};
-    ~Sender(){};
+    ~Sender(){ clean(); };
+
+    void init(std::string rpcMode, std::string serverIp, int serverPort);
 
     template <typename T>
     int setData(std::map<std::string, std::string> header, T* data, size_t numElements);
-    char * sendData(int &dataSize);
+    //char * sendData(int &dataSize);
+    int sendData();
 };
+
 
 inline void Sender::clean()
 {
     for (int r=0; r<records.size(); r++)
         records[r].clean();
+}
+
+
+inline void Sender::init(std::string rpcMode, std::string serverIp, int serverPort, int _myRank, int _numRanks)
+{
+    rpc.init(rpcMode, serverIp, serverPort);
+    numRanks = _numRanks;
+    myRank = _myRank;
 }
 
 
@@ -98,8 +123,6 @@ inline char * Sender::serializeMap(std::map<std::string, std::string> header, in
 }
 
 
-
-
 template <typename T>
 inline int Sender::setData(std::map<std::string, std::string> header, T* data, size_t numElements)
 {
@@ -115,8 +138,8 @@ inline int Sender::setData(std::map<std::string, std::string> header, T* data, s
     memcpy(rec.data, &data[0], rec.dataSize );
 
 
-    std::cout << "\nnumElements: " << numElements << ", getTypeSize(header[type]): " << getTypeSize(header["type"]) << std::endl;
-    std::cout << "data size: " << rec.dataSize << ", header size: " << rec.headerSize << std::endl; 
+    //std::cout << "\nnumElements: " << numElements << ", getTypeSize(header[type]): " << getTypeSize(header["type"]) << std::endl;
+    //std::cout << "data size: " << rec.dataSize << ", header size: " << rec.headerSize << std::endl; 
 
     records.push_back(rec);
 
@@ -124,7 +147,8 @@ inline int Sender::setData(std::map<std::string, std::string> header, T* data, s
 }
 
 
-inline char * Sender::sendData(int &dataSize)
+inline int Sender::sendData()
+//inline char * Sender::sendData(int &dataSize)
 {
     // Calculate total size of the data
     int totalSize = 0;
@@ -141,16 +165,13 @@ inline char * Sender::sendData(int &dataSize)
 
     // Put # records
     int numRecords = records.size();
-    memcpy(bufferPart2 + buffer2Offset, &numRecords, sizeof(int)); 
-    buffer2Offset += sizeof(int);   
+    memcpy(bufferPart2 + buffer2Offset, &numRecords, sizeof(int));  buffer2Offset += sizeof(int);   
 
     // Put each record size
     for (int n=0; n<numRecords; n++)
     {
         int recordSize = sizeof(int) + records[n].headerSize + records[n].dataSize;
-        memcpy(bufferPart2 + buffer2Offset, &recordSize, sizeof(int));
-
-        buffer2Offset += sizeof(int);
+        memcpy(bufferPart2 + buffer2Offset, &recordSize, sizeof(int));  buffer2Offset += sizeof(int);
     }
 
     
@@ -163,14 +184,13 @@ inline char * Sender::sendData(int &dataSize)
     }
 
 
+    // Test
     void * data;
     allocateMemory(data, "float", 8);
-
-    //int dataSize = std::stoi(header["size"]) * getTypeSize(header["type"]);
     std::memcpy(data, bufferPart2 + (sizeof(int) + records[0].headerSize), records[0].dataSize);
 
     for (int i=0; i<8; i++)
-         std::cout << static_cast<float *>(data)[i] << std::endl;
+        std::cout << static_cast<float *>(data)[i] << std::endl;
 
 
 
@@ -180,25 +200,29 @@ inline char * Sender::sendData(int &dataSize)
 
 
     // Create part 1 of the buffer
-    char * bufferPart1 = new char[ sizeof(int) ];
-    memcpy(bufferPart1, &buffer2Offset,   sizeof(int));   // size of the data
+    int bufferPart1Size = sizeof(int)*3;
+    int buff1Offset = 0;
+    char * bufferPart1 = new char[ bufferPart1Size ];
+    memcpy(bufferPart1 + buff1Offset, &buffer2Offset,   sizeof(int)); buff1Offset += sizeof(int); // size of the data
+    memcpy(bufferPart1 + buff1Offset, &myRank,          sizeof(int)); buff1Offset += sizeof(int); // myRank    
+    memcpy(bufferPart1 + buff1Offset, &numRanks,        sizeof(int)); buff1Offset += sizeof(int); // numRanks
 
 
     //
     // Do the send !!!
     //
+    rpc.clientSend(bufferPart1, bufferPart1Size, bufferPart2, totalSize);
 
-    //
-    // rpc.send()
-    //
-    dataSize = totalSize;
-
+   
 
     // clean up; release memory
+    delete [] bufferPart1;
+    delete [] bufferPart2;
+
     clean();
 
-    delete [] bufferPart1;
-    //delete [] bufferPart2;
+    return 1;
 
-    return bufferPart2;
+    // dataSize = totalSize;
+    // return bufferPart2;
 }

@@ -6,6 +6,18 @@
 
 
 
+struct RecvData
+{
+	std::map<std::string, std::string> header;
+    void * data;
+
+    void clean(){
+        release(data, header["type"]);
+    };
+};
+
+
+
 inline bool allocateMemory(void*& data, std::string datatype, size_t numElems) 
 {
 	if (datatype == "int")
