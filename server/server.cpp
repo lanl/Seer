@@ -2,11 +2,13 @@
 #include <memory>
 #include <filesystem>
 #include <string>
-#include <fstream>
 
 #include <thallium.hpp>
 #include <thallium/serialization/stl/string.hpp>
+
+#include "receiver.hpp"
 #include "json.hpp"
+#include "utility.hpp"
 
 namespace tl = thallium;
 std::unique_ptr<tl::engine> myEngine;
@@ -70,9 +72,9 @@ void fn(const tl::request& req, tl::bulk& remote_bulk)
 
     std::cout << "Server received bulk: ";
 
-    for(auto c : w) 
-        std::cout << c;
-    std::cout << std::endl;
+    // for(auto c : w) 
+    //     std::cout << c;
+    // std::cout << std::endl;
 
     /////////////////
         
@@ -81,51 +83,9 @@ void fn(const tl::request& req, tl::bulk& remote_bulk)
 }
 
 
-inline bool fileExisits(char *filename) 
-{
-	std::ifstream ifs(filename);
-	return ifs.good();
-}
-
-
-inline int validateInput(int argc, char *argv[])
-{
-	// Check if we have the right number of arguments
-	if (argc < 2)
-	{
-		std::cerr << "Input argument needed. Run as: <path to input JSON file>" << std::endl;
-		std::cerr << "Read arguments: " << argc << std::endl;
-
-		return 0;
-	}
-
-	// Check if input file provided exists
-	if (!fileExisits(argv[1]))
-	{
-		std::cerr << "Could not find input JSON file " << argv[1] << "." << std::endl;
-		return 0;
-	}
 
 
 
-	// Validate JSON file
-	nlohmann::json jsonInput;
-	std::ifstream jsonFile(argv[1]);
-
-	try
-	{
-		jsonFile >> jsonInput;
-	}
-	catch (nlohmann::json::parse_error &e)
-	{
-		std::cerr << "Input JSON file " << argv[1] << " is invalid!\n"
-				<< e.what() << "\n"
-			    << "Validate your JSON file using e.g. https://jsonformatter.curiousconcept.com/ " << std::endl;
-		return 0;
-	}
-
-    return 1;
-}
 
 
 int main(int argc, char** argv) 
@@ -145,6 +105,8 @@ int main(int argc, char** argv)
     std::string serverIp = jsonInput["server"]["ip"];
     int serverPort = jsonInput["server"]["port"];
     std::string serverAddress = "tcp://" + serverIp + ":" + std::to_string(serverPort);
+
+
 
 
     // start server

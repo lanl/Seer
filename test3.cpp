@@ -6,13 +6,35 @@
 #include <algorithm>
 #include <cstring>
 
-#include "utility.hpp"
 #include "sender.hpp"
-//#include "receiver.hpp"
+
+#include "utility.hpp"
+#include "json.hpp"
 
 
 int main(int argc, char** argv) 
 {
+    int myRank = 2;
+    int numRanks = 8;
+    int ts = 7;
+    
+     //
+	// Validate input params
+	if (!validateInput(argc, argv))
+		return 0;
+
+    // Pass JSON file to json parser
+	nlohmann::json jsonInput;
+	std::ifstream jsonFile(argv[1]);
+	jsonFile >> jsonInput;
+
+
+    // Get server address
+    std::string serverIp = jsonInput["server"]["ip"];
+    int serverPort = jsonInput["server"]["port"];
+    
+    std::cout << "Server is at: " << serverIp << " at port " << serverPort << std::endl;
+
     // Data
     std::vector<float> x;
     x.push_back(0.0);
@@ -46,7 +68,7 @@ int main(int argc, char** argv)
 
 
     Sender send;
-    Receiver recv;
+    send.init(serverIp, serverPort, myRank, numRanks);
 
 
     // Specify Header
@@ -79,16 +101,8 @@ int main(int argc, char** argv)
 
     std::cout << "set data" << std::endl;
 
-    int dataSize = 0;
-    char * buffer = send.sendData(dataSize);
+    send.sendData(ts);
   
-    std::cout << "sent data " << dataSize << "\n@@@@@@@@@@@@@@@@@@@@\n" << std::endl;
-
-
-    // Test Receiving
-    // recv.receiveData(buffer,dataSize);
-    
-    // std::cout << "recv data" << std::endl;
 
     return 0;
 }

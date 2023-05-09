@@ -10,7 +10,6 @@
 
 #include <thallium.hpp>
 #include "utility.hpp"
-#include "rpc.hpp"
 
 // Msg: part 1
 // # records
@@ -72,30 +71,55 @@ struct Record
 
 class Sender
 {
-    RPC rpc;
     std::vector<Record> records;
 
     int myRank;
     int numRanks;
+    std::string serverIp;
+    int serverPort;
+
 
     char * serializeMap(std::map<std::string, std::string> header, int &headerSize);
     void clean();
-    void sendRDMA(std::string serverIp, int serverPort, char * msg1, int msg1Len, char * msg2, int msg2Len);
+    void sendRDMA(char * msg1, int msg1Len, char * msg2, int msg2Len);
 
   public:
     Sender(){};
     ~Sender(){ clean(); };
 
-    void init(std::string rpcMode, std::string serverIp, int serverPort);
+    void init(std::string _serverIp, int _serverPort, int _myRank, int _numRanks);
 
     template <typename T>
     int setData(std::map<std::string, std::string> header, T* data, size_t numElements);
-    //char * sendData(int &dataSize);
-    int sendData();
+    int sendData(int ts);
 };
 
 
-inline void Sender::sendRDMA(std::string serverIp, int serverPort, char * msg1, int msg1Len, char * msg2, int msg2Len)
+
+inline char * Sender::serializeMap(std::map<std::string, std::string> header, int &headerSize)
+{
+    std::stringstream ss;
+    for (auto const& i : header)
+        ss << i.first << ":" << i.second << "\n";
+    
+    std::string tempStr = ss.str();
+    headerSize = tempStr.length()+1;
+
+    char * tempBuf = new char[headerSize];
+    strcpy(tempBuf, tempStr.c_str());
+
+    return tempBuf;
+}
+
+
+inline void Sender::clean()
+{
+    for (int r=0; r<records.size(); r++)
+        records[r].clean();
+}
+
+
+inline void Sender::sendRDMA(char * msg1, int msg1Len, char * msg2, int msg2Len)
 {
     thallium::engine myEngine("tcp", MARGO_CLIENT_MODE);
     thallium::remote_procedure remote_do_rdma = myEngine.define("do_rdma");
@@ -115,34 +139,17 @@ inline void Sender::sendRDMA(std::string serverIp, int serverPort, char * msg1, 
     remote_do_rdma.on(server_endpoint)(myBulk);
 }
 
-inline void Sender::clean()
-{
-    for (int r=0; r<records.size(); r++)
-        records[r].clean();
-}
 
 
-inline void Sender::init(std::string rpcMode, std::string serverIp, int serverPort, int _myRank, int _numRanks)
+
+
+
+inline void Sender::init(std::string _serverIp, int _serverPort, int _myRank, int _numRanks)
 {
-    rpc.init(rpcMode, serverIp, serverPort);
+    serverIp = _serverIp;
+    serverPort = _serverPort;
     numRanks = _numRanks;
     myRank = _myRank;
-}
-
-
-inline char * Sender::serializeMap(std::map<std::string, std::string> header, int &headerSize)
-{
-    std::stringstream ss;
-    for (auto const& i : header)
-        ss << i.first << ":" << i.second << "\n";
-    
-    std::string tempStr = ss.str();
-    headerSize = tempStr.length()+1;
-
-    char * tempBuf = new char[headerSize];
-    strcpy(tempBuf, tempStr.c_str());
-
-    return tempBuf;
 }
 
 
@@ -170,8 +177,7 @@ inline int Sender::setData(std::map<std::string, std::string> header, T* data, s
 }
 
 
-inline int Sender::sendData()
-//inline char * Sender::sendData(int &dataSize)
+inline int Sender::sendData(int ts)
 {
     // Calculate total size of the data
     int totalSize = 0;
@@ -223,18 +229,19 @@ inline int Sender::sendData()
 
 
     // Create part 1 of the buffer
-    int bufferPart1Size = sizeof(int)*3;
+    int bufferPart1Size = sizeof(int)*4;
     int buff1Offset = 0;
     char * bufferPart1 = new char[ bufferPart1Size ];
     memcpy(bufferPart1 + buff1Offset, &buffer2Offset,   sizeof(int)); buff1Offset += sizeof(int); // size of the data
     memcpy(bufferPart1 + buff1Offset, &myRank,          sizeof(int)); buff1Offset += sizeof(int); // myRank    
     memcpy(bufferPart1 + buff1Offset, &numRanks,        sizeof(int)); buff1Offset += sizeof(int); // numRanks
+    memcpy(bufferPart1 + buff1Offset, &ts,              sizeof(int)); buff1Offset += sizeof(int); // timestep
 
 
     //
     // Do the send !!!
     //
-    rpc.clientSend(bufferPart1, bufferPart1Size, bufferPart2, totalSize);
+    sendRDMA(bufferPart1, bufferPart1Size, bufferPart2, totalSize);
 
    
 
@@ -245,7 +252,4 @@ inline int Sender::sendData()
     clean();
 
     return 1;
-
-    // dataSize = totalSize;
-    // return bufferPart2;
 }

@@ -3,19 +3,57 @@
 #include <sstream>
 #include <string>
 #include <map>
+#include <fstream>
+
+#include "json.hpp"
 
 
 
-struct RecvData
+inline bool fileExisits(char *filename) 
 {
-	std::map<std::string, std::string> header;
-    void * data;
+	std::ifstream ifs(filename);
+	return ifs.good();
+}
 
-    void clean(){
-        release(data, header["type"]);
-    };
-};
 
+inline int validateInput(int argc, char *argv[])
+{
+	// Check if we have the right number of arguments
+	if (argc < 2)
+	{
+		std::cerr << "Input argument needed. Run as: <path to input JSON file>" << std::endl;
+		std::cerr << "Read arguments: " << argc << std::endl;
+
+		return 0;
+	}
+
+	// Check if input file provided exists
+	if (!fileExisits(argv[1]))
+	{
+		std::cerr << "Could not find input JSON file " << argv[1] << "." << std::endl;
+		return 0;
+	}
+
+
+
+	// Validate JSON file
+	nlohmann::json jsonInput;
+	std::ifstream jsonFile(argv[1]);
+
+	try
+	{
+		jsonFile >> jsonInput;
+	}
+	catch (nlohmann::json::parse_error &e)
+	{
+		std::cerr << "Input JSON file " << argv[1] << " is invalid!\n"
+				<< e.what() << "\n"
+			    << "Validate your JSON file using e.g. https://jsonformatter.curiousconcept.com/ " << std::endl;
+		return 0;
+	}
+
+    return 1;
+}
 
 
 inline bool allocateMemory(void*& data, std::string datatype, size_t numElems) 
@@ -98,3 +136,14 @@ inline int getTypeSize(std::string type)
         return 0;
     }
 }
+
+
+struct RecvData
+{
+	std::map<std::string, std::string> header;
+    void * data;
+
+    void clean(){
+        release(data, header["type"]);
+    };
+};
