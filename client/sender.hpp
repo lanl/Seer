@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include <thallium.hpp>
 #include "utility.hpp"
 #include "rpc.hpp"
 
@@ -68,6 +69,7 @@ struct Record
 
 
 
+
 class Sender
 {
     RPC rpc;
@@ -78,6 +80,7 @@ class Sender
 
     char * serializeMap(std::map<std::string, std::string> header, int &headerSize);
     void clean();
+    void sendRDMA(std::string serverIp, int serverPort, char * msg1, int msg1Len, char * msg2, int msg2Len);
 
   public:
     Sender(){};
@@ -91,6 +94,26 @@ class Sender
     int sendData();
 };
 
+
+inline void Sender::sendRDMA(std::string serverIp, int serverPort, char * msg1, int msg1Len, char * msg2, int msg2Len)
+{
+    thallium::engine myEngine("tcp", MARGO_CLIENT_MODE);
+    thallium::remote_procedure remote_do_rdma = myEngine.define("do_rdma");
+
+    std::string serverAddress = "tcp://" + serverIp + ":" + std::to_string(serverPort);
+    thallium::endpoint server_endpoint = myEngine.lookup(serverAddress);
+
+    std::vector<std::pair<void*,std::size_t>> segments(2);
+    segments[0].first  = msg1;
+    segments[0].second = msg1Len;
+
+    segments[1].first  = msg2;
+    segments[1].second = msg2Len;
+
+    thallium::bulk myBulk = myEngine.expose(segments, thallium::bulk_mode::read_only);
+
+    remote_do_rdma.on(server_endpoint)(myBulk);
+}
 
 inline void Sender::clean()
 {

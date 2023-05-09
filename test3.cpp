@@ -8,7 +8,7 @@
 
 #include "utility.hpp"
 #include "sender.hpp"
-#include "receiver.hpp"
+//#include "receiver.hpp"
 
 
 int main(int argc, char** argv) 
@@ -86,9 +86,9 @@ int main(int argc, char** argv)
 
 
     // Test Receiving
-    recv.receiveData(buffer,dataSize);
+    // recv.receiveData(buffer,dataSize);
     
-    std::cout << "recv data" << std::endl;
+    // std::cout << "recv data" << std::endl;
 
     return 0;
 }

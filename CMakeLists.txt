@@ -1,13 +1,15 @@
 cmake_minimum_required (VERSION 3.0)
 project (TestThallium)
 
+include_directories(${CMAKE_SOURCE_DIR}/utils)
+include_directories(${CMAKE_SOURCE_DIR}/client)
+
 find_package(MPI REQUIRED)
 
 find_package(mercury REQUIRED)
 find_package(thallium REQUIRED)
 
-add_executable(thallium_client client.cpp)
-target_link_libraries(thallium_client thallium MPI::MPI_CXX)
+add_subdirectory(server)
 
-add_executable(thallium_server server.cpp)
-target_link_libraries(thallium_server thallium MPI::MPI_CXX)
+add_executable(client test3.cpp)
+target_link_libraries(client thallium MPI::MPI_CXX)
