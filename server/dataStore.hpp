@@ -1,142 +1,168 @@
 #pragma once
-#include <memory>
-#include <vector>
+
+#include <fstream>
+#include <string>
+#include <cstring>
 #include <map>
+#include <iostream>
+#include <filesystem>
+#include <unistd.h>
+#include <sys/sysconf.h>
 
-struct SimData
+
+struct Info
 {
-    // Structure for the simulation data
+    enum dataStatus{inMemory, onDisk};
 
-    int ts;
-    int processID;
-    int numProcesses;
-    int numRecords;
-    size_t dataSize;
-    char *data;   
-
-    SimData(){ data = NULL; }
-    ~SimData(){ dealloc();  }
-
-    void dealloc(){
-        if (data != NULL){
-            delete []data;
-            data = NULL;
-        }
-    }
-
-    void copyData(char *input, size_t dataSize){
-        data = new char[dataSize];
-        std::memcpy(data, input, dataSize)
-    }
+    size_t dataSize;    // number of elements
+    bool status;        // 0: in momory, 1: in file
 };
-
 
 
 class DataStore
 {
-    // Organize the simulation data
+    std::map<std::string, Info> metaData;            // key, meta-data
+    std::map<std::string, char *> inMemStorage;      // key, serialized data
 
-    std::map<int, std::vector<SimData>> tsSim;  // timestep, vector of data for each timestep
-    std::map<int, int> tsNumRecv;               // timestep, number of processes it has received data for
-    int numProcesses;                           // total number of processes
+    size_t getAvailableMemory();    
 
+    int writeToDisk(std::string key, char * data, size_t dataSize); // write file to disk
+    char * retreiveFromDisk(std::string key);                       // read data from disk     
+    
   public:
     DataStore();
     ~DataStore();
 
-
-    int setNumProcesses(int _numProcesses){ 
-        numProcesses = _numProcesses; 
-    }
-
-
-    bool allDataReceived(int ts)
-    {
-        //
-        // Check if all the data has been received for a timestep
-
-        if (tsNumRecv[ts] == numProcesses)
-            return true;
-
-        return false;
-    }
+    char * retreiveData(std::string key);                           // retreive data from memory or disk
+    int storeData(std::string key, char * data, size_t dataSize);   // store data to disk
+};
 
 
-    void initTs(int ts)
-    {
-        //
-        // initialize a timestep
-
-        std::vector<SimData> temp(numProcesses);
-        tsSim[ts] = temp;
-        tsNumRecv[ts] = 0;
-    }
+inline DataStore::DataStore(){}
 
 
-    int cleanup(int ts)
-    {
-        // 
-        // Cleanup data
-
-        if (tsSim.count(ts) != 0){
-            // release memory - maybe an overkill
-            for (int p=0; p<numProcesses; p++)
-                tsSim[ts].value[p].dealloc();
-
-            // ts
-            tsSim.erase(ts);
-
-            return 1;
+inline DataStore::~DataStore()
+{
+    // Clean up memory
+    if (inMemStorage.size() != 0)
+        for (auto& element : inMemStorage){
+            delete [] element.second;
+            element.second = nullptr;
         }
 
-        return 0;
-    }
+    // Erase from disk
+    for (auto it=metaData.begin(); it!=metaData.end(); ++it)
+        if (it->second.status == Info::onDisk)
+            std::filesystem::remove( it->first + "file" );
+
+    // Emptying the maps
+    metaData.clear();
+    inMemStorage.clear();
+}
 
 
-    void addData(char *data, size_t dataSize)
+inline char * DataStore::retreiveData(std::string key)
+{
+    if (metaData.count(key) > 0)    // check if that data actually exists
     {
-        //
-        // Process what happens when new data is received
+        if (metaData[key].status == Info::inMemory) // check if it's in memory
+        {
+            // retreive data
+            char * buffer = new char[metaData[key].dataSize];
+            std::memcpy(buffer, inMemStorage[key], metaData[key].dataSize);
 
-        size_t offset = 0
+            // cleanup
+            delete [] inMemStorage[key];
+            inMemStorage.erase(key);
+            metaData.erase(key);
 
-        // Extract some basic metadata
-        int processID, numProcesses, timestep, numRecords;
-        memcpy(&processID,    data + offset, sizeof(int)); offset += sizeof(int); // myRank    
-        memcpy(&numProcesses, data + offset, sizeof(int)); offset += sizeof(int); // numRanks
-        memcpy(&timestep,     data + offset, sizeof(int)); offset += sizeof(int); // timestep
-        memcpy(&numRecords,   data + offset, sizeof(int)); offset += sizeof(int); // num records
+            return buffer;
+        }
+        else    // Info::onDisk
+        {
+            // retreive
+            char * buffer = retreiveFromDisk(key);
 
-        // First timestep
-        if (tsSim.count(timestep) == 0)
-            initTs(timestep);
+            // cleanup
+            metaData.erase(key);
 
-        // Store the data
-        SimData temp;
-        temp.ts = timestep;
-        temp.processID = processID;
-        temp.numProcesses = numProcesses;
-        temp.numRecords = numRecords;
-        temp.copyData( data+offset, dataSize-offset) );
-
-        tsSim[timestep].value[processID] = temp;
-
-
-        // Increment the count of number of processes available for that timestep
-        tsNumRecv[ts]++;
+            return buffer;
+        }
     }
+    else
+        return nullptr;
+}
 
 
-    int saveToDisk(int ts)
+inline int DataStore::storeData(std::string key, char * data, size_t dataSize)
+{
+    // Check how much memory we have
+    bool memoryLimited = false;
+    size_t availableMemory = getAvailableMemory();
+    if (dataSize > availableMemory)
+        memoryLimited = true;
+
+    Info rcvInfo = {dataSize, Info::inMemory};
+    if (memoryLimited)   // save to disk
     {
-        // TODO: save the dato to disk and keep a handler for retreival
+        writeToDisk(key, data, dataSize);
 
-        return 1;
+        rcvInfo.status = Info::onDisk;
+        metaData[key] = rcvInfo;
     }
-
-
-    int retreiveFromDisk(int ts)
+    else    // save in memory
     {
-        // TODO: save the dato to disk and keep a handler for retreival
+        char * buffer = new char[dataSize];
+        std::memcpy(buffer, data, dataSize);
+
+        inMemStorage[key] = buffer;
+        metaData[key] = rcvInfo;
     }
-};
+   
+    // clean up that data
+    delete []data;
+    data = nullptr;
+}
+
+
+inline size_t DataStore::getAvailableMemory()
+{
+    long pages = sysconf(_SC_AVPHYS_PAGES);
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    long available_memory = pages * page_size;
+    return (size_t) available_memory;
+}
+
+
+inline int DataStore::writeToDisk(std::string key, char * data, size_t dataSize)
+{
+    std::ofstream file(key + ".file");
+    file.write(data, dataSize);
+    file.close();
+
+    return 1;
+}
+
+
+inline char * DataStore::retreiveFromDisk(std::string key)
+{
+    std::ifstream myfile(key + ".file");
+
+    if (!myfile.is_open()) 
+    {
+        std::cout << "Error: File could not be retreive data" << std::endl;
+        return nullptr;
+    }
+
+    // Get the file size
+    myfile.seekg(0, std::ios::end);
+    size_t fileSize = myfile.tellg();
+    char *buffer = new char[fileSize];
+
+    // Get the data
+    myfile.seekg(0);
+    myfile.read(buffer, fileSize);
+    myfile.close();
+
+    return buffer;
+}

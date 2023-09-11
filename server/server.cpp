@@ -159,11 +159,6 @@ inline void recvFn(const thallium::request& req, thallium::bulk& remote_bulk)
 
 
 
-
-
-
-
-
 int main(int argc, char** argv) 
 {
     //
@@ -183,12 +178,8 @@ int main(int argc, char** argv)
     std::string serverAddress = "tcp://" + serverIp + ":" + std::to_string(serverPort);
 
 
-
-
     // start server
     myEngine = std::make_unique<thallium::engine>(serverAddress, THALLIUM_SERVER_MODE);  // infiniband address
     std::cout << "Server running at address " << myEngine->self() << std::endl;
     myEngine->define("do_rdma",recvFn);
 }
-
-
