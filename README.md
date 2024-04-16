@@ -9,12 +9,11 @@ Seer is a lightweight insitu wrapper library adding insitu capabilities to simul
 * C++ 11
 * MPI 3
 * Mochi
-* Paraview Catalyst
 
 
 ## Environment Setup
 
-* This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed, modify (or create) packages.yaml to contain the following:
+* This project uses [Spack](https://spack.readthedocs.io/en/latest/). Once Spack is installed, modify (or create) packages.yaml, usually in ~/.spack to contain the following:
 
 ~~~bash
 packages:
@@ -43,14 +42,6 @@ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 python get-pip.py
 python -m pip install jupyter
 
-# ParaView
-spack install paraview@5.7.0 +osmesa +python3 ^hwloc@1.9
-
-# VTK (Optional for testing)
-spack install vtk #(spack install vtk ^hdf5+hl+mpi to bypass error)
-
-# Papi (usually already on the server and doesn't need install)
-spack install papi
 ~~~
 
 
@@ -64,9 +55,6 @@ The following environment needs to be activated as follows:
 # load Seer insitu stuff as follows
 spack load -r margo
 spack load -r sdskeyval
-
-spack load paraview@5.7.0
-spack load mesa #needed for ParaView without X
 
 cd src
 mkdir build
