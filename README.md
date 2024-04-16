@@ -6,7 +6,7 @@ Seer is a lightweight insitu wrapper library adding insitu capabilities to simul
 ## Requirements
 
 * CMake 3.10 or above
-* C++ 11
+* C++ 11 (gcc 9.4 or higher)
 * MPI 3
 * Mochi
 
@@ -24,37 +24,40 @@ packages:
 * Setting up packages
 
 ~~~bash
-spack install openmpi
 
 # Mochi
-git clone https://github.com/mochi-hpc/mochi-spack-packages
+git clone https://github.com/mochi-hpc/mochi-spack-packages.git
 spack repo add mochi-spack-packages
-spack install mochi-margo
-spack install mochi-sdskv+leveldb
-spack install py-mochi-sdskv
 
-# To install Jupyter notebook (for the client)
-#   load the python associated with the mochi python
-spack load -r py-mochi-sdskv  
-
-#   install jupyter for that python
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python get-pip.py
-python -m pip install jupyter
-
+spack install mochi-yokan@0.4.2
+spack install py-blosc2
+spack install py-notebook
+spack install py-matplotlib
+spack install py-notebook
+spack install nholmann-json
+spack install c-blosc2
 ~~~
 
 
 ## Building the sim
 
-The following environment needs to be activated as follows:
+The following packages need to be loaded. It's easier to put them in a scipt that can be run, e.f. loadEnv.sh.
 
 ~~~bash
-# load whatever modules the sim needs
+# load the modules
 
-# load Seer insitu stuff as follows
-spack load -r margo
-spack load -r sdskeyval
+module load openmpi/3.1.6-gcc_9.4.0
+module load cmake
+
+spack load mochi-yokan@0.4.2 
+spack load conduit
+spack load py-blosc2
+spack load py-notebook
+spack load py-numpy
+spack load py-matplotlib
+spack load c-blosc2
+spack load nholmann-json
+
 
 cd src
 mkdir build
@@ -77,15 +80,10 @@ There are three parts of running the insitu package
 
 ~~~bash
 # Load the modules
-spack load -r margo
-spack load -r sdskeyval
+source loadEnv.sh
 
 # Distributed memory
-# skv-server-daemon ofi+tcp://<path of server>:<port of server> <name of db>:ldb &
-sdskv-server-daemon ofi+tcp://192.168.101.186:1234 foo_test1:ldb &
-
-# Shared memory (testing purposes)
-sdskv-server-daemon na+sm foo:ldb -f address &
+source lauchMochiServer.sh mochi-yokan-config.json
 ~~~
 
 
@@ -93,23 +91,12 @@ sdskv-server-daemon na+sm foo:ldb -f address &
 
 ~~~bash
 # load whatever modules the sim needs
-
-# load Seer insitu stuff as follows 
-spack load -r margo
-spack load -r sdskeyval
-
-spack load paraview@5.7.0
-spack load mesa #needed for ParaView without X
-
+source loadEnv.sh
 
 # Run the sim
 
 # Distributed memory
-# mpirun -np 4 <sim_name> --insitu <input file>
-mpirun -np 4 demoApps/miniAppStructured --insitu ../inputs/input-test.json  
-
-# Shared memory (testing purposes
-demoApps/testMPI na+sm://9923/0 1 foo 10  
+mpirun -np 4 sim_test mochi-yokan-config.json  
 ~~~
 
 ### 3. Run the client
@@ -119,22 +106,20 @@ demoApps/testMPI na+sm://9923/0 1 foo 10
 Get a compute node on the server
 
 ~~~bash
-# Load the modules
-spack load -r py-sdskv
+# load whatever modules the sim needs
+source loadEnv.sh
 
 # only needed first time
-jupyter-notebook password
+souce lauchJupyterNotebookServer.sh <port e.g. 8871>
 
-# Launch jupyter notebook on the server
-# jupyter-notebook --no-browser --port=<port_number> --ip=0.0.0.0
-jupyter-notebook --no-browser --port=8897 --ip=0.0.0.0
-
+# Look for the command to use to connect from the client
 ~~~
 
 #### Local (client)
 
 ~~~bash
 # Tunnel to the server
+# USe the command from above, it should look like:
 #   ssh -N -f -L <port_number>:<host_name>:<port_number> username@cluster 
 ssh -N -f -L 8897:cn37:8897 pascalgrosset@darwin-fe
 ~~~
@@ -145,29 +130,6 @@ In the browser:
 # http://localhost:<port_number>
 http://localhost:8897
 ~~~
-
-# Note
-
-## Environment setup
-
-Scripts for setting up the environment different platforms are located in the evn folder:
-
-* <machine_name>_sim.sh
-* <machine_name>_mochiServer.sh
-* <machine_name>_jupyter.sh
-
-Scripts for launching sims are located in the script folder:
-
-* miniAppStruc_darwin.sh
-* runBatch__256_16_16_scaling_mochi.sh
-* runBatch__64_8_8_glaton_mochi.sh
-
-
-## No papi counters found
-
-* Check if papi events are around using: papi_avail | more
-* Turn them on (if disabled) using: sudo sh -c 'echo 1 >/proc/sys/kernel/perf_event_paranoid'
-
 
 # Citing Seer
 Pascal Grosset, Jesus Pulido, James Ahrens, "Personalized In Situ Steering for Analysis and Visualization",  In Proceedings of the Workshop on In Situ Infrastructures for Enabling Extreme-Scale Analysis and Visualization (ISAV '20). Association for Computing Machinery, New York, NY, USA. DOI:https://doi.org/10.1145/3426462.3426463
