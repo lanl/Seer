@@ -1,0 +1,9 @@
+{
+    "data-servers" :
+    [
+        { 
+            "addr" : "na+sm://2939983-0", 
+            "provider_id" : 123
+        }
+    ]
+}

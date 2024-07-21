@@ -1,0 +1,44 @@
+{
+    "data-servers" :
+    [
+        { 
+            "addr" : "na+sm://432731-0", 
+            "provider_id" : 121
+        },
+
+        { 
+            "addr" : "na+sm://432732-0", 
+            "provider_id" : 122
+        },
+
+        { 
+            "addr" : "na+sm://432733-0", 
+            "provider_id" : 123
+        },
+
+        { 
+            "addr" : "na+sm://432734-0", 
+            "provider_id" : 124
+        },
+
+        { 
+            "addr" : "na+sm://432735-0", 
+            "provider_id" : 125
+        },
+
+        { 
+            "addr" : "na+sm://432736-0", 
+            "provider_id" : 126
+        },
+
+        { 
+            "addr" : "na+sm://432737-0", 
+            "provider_id" : 127
+        },
+
+        { 
+            "addr" : "na+sm://432738-0", 
+            "provider_id" : 128
+        }
+    ]
+}
