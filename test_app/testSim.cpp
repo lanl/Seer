@@ -5,7 +5,7 @@
 #include <random>
 
 #include <mpi.h>
-#include "seer_o.h"
+#include "seer_o.hpp"
 
 
 int main(int argc, char *argv[])
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	//seer.init("ofi+tcp", argv[1], 123);
 
     int nElems = 50;
-    int ts = 70;
+    int ts = 5;
     for (int t=0; t<ts; t++)
     {
         if (world_rank == 0)
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
         {
             std::vector<float> value;
             for (int i=0; i<nElems; i++)
-                value.push_back( i*(10*t) + world_rank*0.1 );
+                value.push_back( 50000 + i*(10*t) + world_rank*0.0001 );
             std::cout << "pressure, numElements: " << value.size() << std::endl;
 
             seer.sendData(world_rank, t, "pressure_3", "data", "float", value.size(), &value[0]);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         {
             std::vector<float> value;
             for (int i=0; i<nElems; i++)
-                value.push_back(i*(10*t) + world_rank*0.02);
+                value.push_back(10000 + i*(10*t) + world_rank*0.02);
             std::cout << "temperature, numElements: " << value.size() << std::endl;
 
             seer.sendData(world_rank, t, "temperature_3", "data", "float", value.size(), &value[0]);

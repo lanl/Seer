@@ -7,3 +7,6 @@ fi
 
 #bedrock na+sm -c $1 &
 bedrock tcp -c $1 &
+
+# run as:
+# run/launchMohiServer.sh test_app/mochi-yokan-config.json

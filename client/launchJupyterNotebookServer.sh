@@ -9,3 +9,7 @@ echo "then in a browser: http://localhost:$1"
 echo "---------------------------------------------------------"
 echo ""
 jupyter-notebook --no-browser --port=$1 --ip=0.0.0.0 &
+
+
+# run as e.g.:
+# source client/launchJupyterNotebookServer.sh 8871

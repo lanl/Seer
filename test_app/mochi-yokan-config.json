@@ -1,5 +1,5 @@
 {
-    "sim-id" : "12345",
+    "sim-id" : "07112",
     
     "libraries": 
     {
@@ -23,12 +23,26 @@
             }
         }
     ],
-    
+
+
+    "data" :
+    [
+        {
+            "name" : "pressure_3",
+            "compressor" : "BLOSC"
+        },
+
+        {
+            "name" : "temperature_3",
+            "compressor" : "SZ3",
+            "psnr" : 50
+        }
+    ],
 
     "databases" : 
     [
         {
-            "address" : "192.168.81.72:44943",
+            "address" : "192.168.81.72:46185",
             "protocol" : "ofi+tcp",
             
             "provider_id" : 124
