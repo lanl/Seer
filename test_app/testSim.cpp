@@ -6,10 +6,13 @@
 
 #include <mpi.h>
 #include "seer_o.hpp"
+#include "utils.hpp"
 
 
 int main(int argc, char *argv[])
 {
+    std::stringstream debugLog;
+
     if (argc < 2)
     {
         std::cout << "json file needed address needed!" << std::endl;
@@ -29,14 +32,18 @@ int main(int argc, char *argv[])
 
     std::cout << "world size: " << world_size << ", rank: " << world_rank << std::endl;
 
-    InSitu seer(world_rank, world_size, argv[1]);
+    InSitu seer;
+    seer.init(world_rank, world_size, argv[1]);
     //seer.init("na+sm", argv[1], 123);
 	//seer.init("ofi+tcp", argv[1], 123);
 
-    int nElems = 50;
+    debugLog << world_rank << ", " << world_size << std::endl;
+
+    int nElems = 100;
     int ts = 5;
     for (int t=0; t<ts; t++)
     {
+        debugLog << "ts: " << t << std::endl;
         if (world_rank == 0)
             std::cout << "\n\nts: " << t << std::endl;
 
@@ -44,32 +51,39 @@ int main(int argc, char *argv[])
         
         // particles, let's not worry about topology for now
         {
+            debugLog << "pressure_3. numElements: " << nElems << std::endl;
             std::vector<float> value;
             for (int i=0; i<nElems; i++)
+            {
                 value.push_back( 50000 + i*(10*t) + world_rank*0.0001 );
-            std::cout << "pressure, numElements: " << value.size() << std::endl;
-
+                debugLog << 50000 + i*(10*t) + world_rank*0.0001 << "," << std::endl;
+            }
             seer.sendData(world_rank, t, "pressure_3", "data", "float", value.size(), &value[0]);
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
+        debugLog <<  "\n" << std::endl;
 
         {
+            debugLog << "temperature_3, numElems: " << nElems << std::endl;
             std::vector<float> value;
-            for (int i=0; i<nElems; i++)
+            for (int i=0; i<nElems; i++){
                 value.push_back(10000 + i*(10*t) + world_rank*0.02);
-            std::cout << "temperature, numElements: " << value.size() << std::endl;
-
+                debugLog << 10000 + i*(10*t) + world_rank*0.02 << "," << std::endl;
+            }
             seer.sendData(world_rank, t, "temperature_3", "data", "float", value.size(), &value[0]);
         }
 
         seer.tsDone(t);
+        debugLog <<  "\n--------------------------\n" << std::endl;
 
-        std::this_thread::sleep_for(std::chrono::seconds( dist15(rng)  ));
+        std::this_thread::sleep_for(std::chrono::seconds( dist15(rng) ));
     }
 
 
     MPI_Finalize();
+
+    writeLog( ("sim" "_" + std::to_string(world_rank)),  debugLog.str());
 
     return 0;
 }
