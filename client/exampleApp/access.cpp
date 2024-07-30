@@ -9,6 +9,8 @@
 int main(int argc, char** argv) 
 {    
     MPI_Init(NULL, NULL);
+
+    std::stringstream myLog;
     
     int world_size, world_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);    
@@ -32,36 +34,54 @@ int main(int argc, char** argv)
     seer.init(jsonFilename);
 
     int ts = 0;
+    int retries = 0;
     while(true)
     {
+        
         if (seer.isTimestepReady(ts))
         {
             std::string key_prefix = "_" + simid + "/" + std::to_string(ts) + "/" + std::to_string(world_rank) + "/";
 
             size_t numElements;
-            float *pressure = seer.getData(ts,world_rank, "pressure_3", numElements);
-            float *temperature = seer.getData(ts,world_rank, "temperature_3", numElements);
 
-            std::cout << "\nPressure ~ ts:" << ts << " num elemenst: " << numElements << std::endl;
+            std::string metadata;
+             float *temperature = seer.getData(ts,world_rank, "temperature_3", numElements, metadata);
+            myLog << "\ntemperature ~ ts:" << ts << " num elemenst: " << numElements  << ", " << metadata << std::endl;
             for (int i=0; i<19; i++)
             {
-                std::cout << pressure[i] << ", ";
+                myLog << temperature[i] << ", ";
             }
-            std::cout << "\n";
+            myLog << "\n";
 
-
-            std::cout << "\ntemperature ~ ts:" << ts << " num elemenst: " << numElements << std::endl;
-            for (int i=0; i<19; i++)
-            {
-                std::cout << temperature[i] << ", ";
-            }
-            std::cout << "\n";
-
-            delete []pressure;
+            
             delete []temperature;
+
+
+
+            float *pressure = seer.getData(ts,world_rank, "pressure_3", numElements, metadata);
+            myLog << "Pressure ~ ts:" << ts << " num elemenst: " << numElements << ", " << metadata << std::endl;
+            for (int i=0; i<9; i++)
+            {
+                myLog << pressure[i] << ", ";
+            }
+            std::cout << "\n";
+            delete []pressure;
+
+           
+            ts++;
+            retries = 0;
+        }
+        else
+        {
+            retries++;
+            if (retries == 5)
+            {
+                std::cout << "Not ready!!! for ts: " << ts << std::endl;
+                break;
+            }
         }
 
-        ts++;
+         writeLog( ("seerSim_" + simid + "_" + std::to_string(world_rank)), myLog.str());
     }
     
     

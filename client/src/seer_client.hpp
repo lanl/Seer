@@ -40,7 +40,7 @@ class SeerClient
     char* getYokanData(int dbIndex, std::string key);
     std::string getYokanValue(int index, std::string key);
 
-    int decompressBLOSC(char * cdata, float data[], size_t numElements);
+    int decompressBLOSC(char * cdata, float * data, size_t numElements);
     int decompressSZ3(char * cmpData, int x_dim, int y_dim, int z_dim, size_t cmpSize, float decData[], std::string mode, float bound);
 
 
@@ -52,7 +52,7 @@ class SeerClient
 
     int getNumRanks();
     bool isTimestepReady(int ts);
-    float * getData(int ts, int rank, std::string variable, size_t & numElements);
+    float * getData(int ts, int rank, std::string variable, size_t & numElements, std::string &metadata);
 };
 
 
@@ -77,16 +77,18 @@ inline int SeerClient::loadDatabases()
                 db_addresses.push_back( serverAddr );
 
                 numDatabases++;
-                //std::cout << "database found at: " << serverAddr << std::endl;
+                std::cout << "database found at: " << serverAddr << std::endl;
                 debugLog << "database found at: " << serverAddr << std::endl;
             }
         }
     }
 
     debugLog << "num Databases: " << numDatabases << std::endl;
+    std::cout << "num Databases: " << numDatabases << std::endl;
 
     return 1;
 }
+
 
 inline yk_database_handle_t SeerClient::initDB(std::string protocol, std::string serverAddr, int providerId)
 {
@@ -106,6 +108,8 @@ inline yk_database_handle_t SeerClient::initDB(std::string protocol, std::string
 
     yk_database_handle_t db_handle = YOKAN_DATABASE_HANDLE_NULL;
     ret = yk_database_handle_create(client, server_addr, providerId, true, &db_handle);
+    debugLog<< "initDB: " << (ret == YOKAN_SUCCESS) << std::endl;
+
     assert(ret == YOKAN_SUCCESS);
 
     return db_handle;
@@ -128,10 +132,13 @@ inline char* SeerClient::getYokanData(int dbIndex, std::string key)
     Timer clock;
     clock.start("put-data");
 
+    debugLog << "\ngetYokanData key: " << key << ", dbindex: " << dbIndex << std::endl;
+
     // getting the length of the value associated with the key
     yk_return_t ret;
     size_t vsize;
     ret = yk_length(db_handles[dbIndex], YOKAN_MODE_DEFAULT, key.data(), key.length(), &vsize);
+    debugLog << "vsize: " << vsize << std::endl;
 
     // getting the value associated with a key
     char * value_out = (char*)malloc(vsize);
@@ -145,17 +152,18 @@ inline char* SeerClient::getYokanData(int dbIndex, std::string key)
 }
 
 
-
-inline int SeerClient::decompressBLOSC(char * cdata, float data[], size_t numElements)
+inline int SeerClient::decompressBLOSC(char * cdata, float *data, size_t numElements)
 {
     Timer clock;
     clock.start("blosc-decompress");
 
     blosc2_init();
 
-    size_t dataSize = sizeof(float) * numElements;
-    data = new float[numElements];
-    size_t decsize = blosc1_decompress(cdata, &data[0], dataSize);
+    size_t dataSize = (sizeof(float) * numElements);// + BLOSC2_MAX_OVERHEAD;
+    size_t decsize = blosc1_decompress(cdata, data, dataSize);
+
+
+    debugLog << "dataSize: " << dataSize << ", decsize: " << decsize << std::endl;
     
     if (decsize < 0)
 		throw std::runtime_error("Decompression error. Error code: " + std::to_string(decsize));
@@ -203,11 +211,14 @@ inline void SeerClient::init(std::string inputJsonFile)
     std::ifstream jsonFile(inputJsonFile);
     nlohmann::json jsonInput;
     jsonFile >> jsonInput;
+    numDatabases = 0;
 
     simID = jsonInput["sim-id"];
     jsonInputFile = inputJsonFile;
     
     loadDatabases();
+
+    debugLog << "simID: " << simID << ", jsonInputFile: " << jsonInputFile << std::endl;
 
     if (numDatabases == 0)
         std::cout << "Error; in situ is not going to work!!!" << std::endl;
@@ -218,11 +229,24 @@ inline void SeerClient::init(std::string inputJsonFile)
 
 inline bool SeerClient::isTimestepReady(int ts)
 {
-    std::string getYokanData = "_" + simID + "/" + std::to_string(ts) + "/status";
-    std::string status = getYokanValue(0, getYokanData);
+    std::string key, value;
+    key = "_" + simID + "/num_ranks";
+    debugLog << "isTimestepReady, key: " << key << std::endl;
+    value = getYokanValue(0, key);
 
-    std::cout <<  "ts: " << ts << ", status:" << status << std::endl;
-    if (status == "ready")
+    int numRanks = std::stoi(value);
+
+
+    int count = 0;
+    for (int r=0; r<numRanks; r++)
+    {
+        key = "_" + simID + "/" + std::to_string(ts) + "/" + std::to_string(r) + "/status";
+        value = getYokanValue(0, key);
+        if (value == "done")
+            count++;
+    }
+
+    if (count == numRanks)
         return true;
     else
         return false;
@@ -238,7 +262,7 @@ inline int SeerClient::getNumRanks()
 }
 
 
-inline float * SeerClient::getData(int ts, int rank, std::string variable, size_t & numElements)
+inline float * SeerClient::getData(int ts, int rank, std::string variable, size_t & numElements, std::string &metadata)
 {
     std::string key;
     std::string key_prefix = "_" + simID + "/" + std::to_string(ts) + "/" + std::to_string(rank) + "/" +  variable + "/";
@@ -248,6 +272,15 @@ inline float * SeerClient::getData(int ts, int rank, std::string variable, size_
     std::string dataType  = getYokanValue(0, (key_prefix + "type"));
     int dbIndex = std::stoi( getYokanValue(0, (key_prefix + "dbIndex")) );
 
+
+    debugLog << "\n num_elems: " << numElements << std::endl;
+    debugLog << "variable: " << variable << std::endl;
+    debugLog << "compressed_size: " << compressedSize << std::endl;
+    debugLog << "type: " << dataType << std::endl;
+    debugLog << "dbIndex: " << dbIndex << std::endl;
+
+    metadata = "type: " + dataType + ", num_elems:" + std::to_string(numElements);
+    
 
     // Compression
     std::ifstream jsonFile(jsonInputFile);
@@ -270,6 +303,9 @@ inline float * SeerClient::getData(int ts, int rank, std::string variable, size_
         }
     }
     
+    debugLog << "mode: " << mode << std::endl;
+    debugLog << "bound: " << bound << std::endl;
+    debugLog << "bloscCompress: " << bloscCompress << std::endl;
 
     char * cdata = getYokanData(dbIndex, (key_prefix + "value") );
     float *data = new float[numElements];
@@ -278,6 +314,9 @@ inline float * SeerClient::getData(int ts, int rank, std::string variable, size_
         decompressBLOSC(cdata, data, numElements);
     else
         decompressSZ3(cdata, numElements, 1, 1, compressedSize, data, mode, bound);
+
+
+    writeLog( ("seer_" + simID + "_" + std::to_string(rank)), debugLog.str());
 
     return &data[0];
 }

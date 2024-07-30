@@ -43,6 +43,9 @@ class InSitu
     int putValue(int dbIndex, std::string key, std::string value);               // metadata
     int putData(int dbIndex, std::string key, char * value, size_t val_len);     // actual simlation data
 
+    std::string getYokanValue(int index, std::string key);
+    char* getYokanData(int dbIndex, std::string key);
+    
     char * compressSZ3(float * data, int x_dim, int y_dim, int z_dim, size_t & csize, std::string mode, float bound);
     char * compressBLOSC(float * data, size_t numElements, size_t & csize);
 
@@ -261,6 +264,40 @@ inline int InSitu::putData(int dbIndex, std::string key, char * value, size_t va
 }
 
 
+inline std::string InSitu::getYokanValue(int index, std::string key)
+{
+    char *_temp = getYokanData(0, key);
+    std::string temp(_temp);
+    delete []_temp;
+
+    return temp;
+}
+
+
+inline char* InSitu::getYokanData(int dbIndex, std::string key)
+{
+    Timer clock;
+    clock.start("put-data");
+
+    std::cout << "\ngetYokanData key: " << key << ", dbindex: " << dbIndex << std::endl;
+
+    // getting the length of the value associated with the key
+    yk_return_t ret;
+    size_t vsize;
+    ret = yk_length(db_handles[dbIndex], YOKAN_MODE_DEFAULT, key.data(), key.length(), &vsize);
+    std::cout << "vsize: " << vsize << std::endl;
+
+    // getting the value associated with a key
+    char * value_out = (char*)malloc(vsize);
+    size_t value_out_size = vsize;
+    ret = yk_get(db_handles[dbIndex], YOKAN_MODE_DEFAULT, key.data(), key.length(), value_out, &value_out_size);
+    
+    clock.stop("put-data");
+    //debugLog << "Sending data to Mochi took " << clock.getDuration("put-data") << " s." << std::endl;
+
+    return value_out;
+}
+
 
 inline void InSitu::sendInfo(int myRank, int ts, std::string key, std::string value)
 {
@@ -355,25 +392,8 @@ inline int InSitu::tsDone(int ts)
 {
     std::stringstream debugLog;
 
-    int dbIndex = ts%numDatabases;
-
-
-    debugLog << "\n----\ntsDone ~ dbIndex: " << dbIndex << std::endl;
-    if (tsNum.find(ts) == tsNum.end()) 
-        tsNum[ts] = 1;
-    else
-        tsNum[ts] = tsNum[ts]+1;
-
-
-    std::string key = "_" + simID + "/" + std::to_string(ts) + "/status";
-    if (tsNum[ts] == numRanks)
-    {
-        putValue(0, key, "ready");
-        //loadDatabases();    // periodically check for new databases
-    }
-    else
-        putValue(0, key, std::to_string(tsNum[ts]));
-
+    std::string key = "_" + simID + "/" + std::to_string(ts) + "/" + std::to_string(myRank) + "/status";
+    putValue(0, key, "done");
 
     log += debugLog.str();
     writeLog( ("seer_" + simID + "_" + std::to_string(myRank)),  log);

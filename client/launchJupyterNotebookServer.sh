@@ -8,6 +8,7 @@ echo "ssh -N -f -L $1:$(hostname -f):$1 pascalgrosset@darwin-fe.lanl.gov"
 echo "then in a browser: http://localhost:$1"
 echo "---------------------------------------------------------"
 echo ""
+export PYVISTA_TRAME_SERVER_PROXY_PREFIX='/proxy/'
 ipython kernel install --name "venv-seer" --user
 jupyter-notebook --no-browser --port=$1 --ip=0.0.0.0 &
 
