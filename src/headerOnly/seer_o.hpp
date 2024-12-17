@@ -57,13 +57,13 @@ class InSitu
     ~InSitu(){};
 
     int tsDone(int ts);
+    int simDone();
     void init(int rank, int worldSize, std::string inputJsonFile="");
 
     void sendInfo(int myRank, int ts, std::string key, std::string value);
     void sendData(int myRank, int ts, std::string name, std::string type, std::string dataType, size_t numElements, float * data);
     void sendDataTest(int myRank, int ts, std::string name, std::string type, std::string dataType, size_t numElements);
 };
-
 
 
 inline InSitu::InSitu(int rank, int worldSize, std::string inputJsonFile)
@@ -393,6 +393,21 @@ inline int InSitu::tsDone(int ts)
     std::stringstream debugLog;
 
     std::string key = "_" + simID + "/" + std::to_string(ts) + "/" + std::to_string(myRank) + "/status";
+    putValue(0, key, "done");
+
+    log += debugLog.str();
+    writeLog( ("seer_" + simID + "_" + std::to_string(myRank)),  log);
+    //appendLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
+
+    return 1;
+}
+
+
+inline int InSitu::simDone()
+{
+    std::stringstream debugLog;
+
+    std::string key = "_" + simID + "/" + std::to_string(myRank) + "/simDone";
     putValue(0, key, "done");
 
     log += debugLog.str();

@@ -6,7 +6,7 @@ Allocate a node and start a server as follows:
 ```
 salloc -N 1 -p scaling
 
-source run/loadEnv.sh                                           # setup the environment
+source env/loadEnv.sh                                           # setup the environment
 source run/launchMochiServer.sh run/mochi-yokan-config.json     # launch the server
 ```
 

@@ -1,0 +1,18 @@
+mpic++ /projects/insituperf/seer_o/client/exampleApp/access.cpp -std=c++17 -o runClient \
+-I /projects/insituperf/seer_o/client/src/ \
+-I /projects/insituperf/SZ3/install/include/ \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/c-blosc2-2.11.1-rkb63dt4yt5xzwamtpdhixbvbmgbwskm/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/nlohmann-json-3.11.2-axdmuuszkpr5sl42467aveuc2rubmg3k/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-abt-io-0.6.0-ajkjkzqhqeml4l7a2nedezup6kqsl7mr/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-margo-0.15.0-gbcextlqglkmsymdjchg7pornsleer6s/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-thallium-0.12.0-yxhgxsubfjsz57grdxjdtz5zffnhtfsn/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-yokan-0.4.2-hiu7yh7om6nmyc2ahuknpdsov5k64zcj/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-ssg-0.5.3-osjcelmofnrz6fmogj4ibyujc4drummo/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-bedrock-0.9.1-trc45mwsnojzpqhtfdje3ionrponizg3/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mercury-2.3.1-nsflrfvyumlrmhahhsapli6vi2pl5ocw/include \
+-I /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/argobots-1.2rc1-a2nl6yqhrkfpngr4jke43fnu5jwuyz3f/include \
+-L /projects/insituperf/SZ3/install/lib64 -l SZ3c \
+-L /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/c-blosc2-2.11.1-rkb63dt4yt5xzwamtpdhixbvbmgbwskm/lib64/ -l blosc2 \
+-L /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-yokan-0.4.2-hiu7yh7om6nmyc2ahuknpdsov5k64zcj/lib -l yokan-client \
+-L /vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-margo-0.15.0-gbcextlqglkmsymdjchg7pornsleer6s/lib -l margo \
+-l zstd

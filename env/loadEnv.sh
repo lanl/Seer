@@ -2,6 +2,9 @@ module load openmpi/3.1.6-gcc_9.4.0
 module load cmake
 module list
 
+
+source /vast/home/pascalgrosset/loadSpack.sh
+
 spack load /hiu7yh7 #mochi-yokan@0.4.2 
 spack load conduit
 spack load py-blosc2

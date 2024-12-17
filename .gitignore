@@ -1,3 +1,5 @@
-build*
 install*
 .ipynb*
+*.log
+.ipynb_checkpoints
+.vscode

@@ -1,5 +1,5 @@
 {
-    "sim-id" : "12345",
+    "sim-id" : "123450",
     
     "libraries": 
     {
@@ -28,7 +28,7 @@
     "databases" : 
     [
         {
-            "address" : "192.168.81.72:44943",
+            "address" : "192.168.81.94:33395",
             "protocol" : "ofi+tcp",
             
             "provider_id" : 124

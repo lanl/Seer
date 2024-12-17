@@ -53,7 +53,6 @@ int main(int argc, char** argv)
             }
             myLog << "\n";
 
-            
             delete []temperature;
 
 

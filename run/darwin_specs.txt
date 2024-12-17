@@ -1,0 +1,13 @@
+Darwin-scaling partition:
+
+NUMA node0 CPU(s):   0-17,36-53
+NUMA node1 CPU(s):   18-35,54-71
+
+[pascalgrosset@cn359 pythonAccess]$ free -h
+              total        used        free      shared  buff/cache   available
+Mem:          125Gi       1.6Gi        85Gi       909Mi        38Gi       121Gi
+Swap:            0B          0B          0B
+
+
+Partition 	Arch 	Nodes 	Cores 	GPUs 
+scaling 	x86_64 	32 	     36     No
