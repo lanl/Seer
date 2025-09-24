@@ -1,0 +1,68 @@
+{
+    "sim-id" : "02_001",
+
+    "benchmark" : {
+        "num-ts" : 50,
+        "num-elements" : 4000
+    },
+    
+    "libraries": [
+        "/vast/home/pascalgrosset/software/spack/opt/spack/linux-broadwell/mochi-yokan-0.8.1-njadzndq6fkjnrva3utxazt4psj6pc2v/lib/libyokan-bedrock-module.so"
+    ],
+    
+    "providers": 
+    [
+        {
+            "name" : "yokan_provider",
+			"provider_id" : 124,
+            "type" : "yokan",
+			"pool" : "__primary__",
+            "config" : 
+            {
+                "database": 
+                {
+                    "type": "map"
+                }
+                
+            }
+        }
+    ],
+
+
+    "data" :
+    [
+        {
+            "name" : "pressure_3",
+            "compressor" : "BLOSC"
+        },
+
+        {
+            "name" : "temperature_3",
+            "compressor" : "SZ3",
+            "mode" : "psnr",
+            "value" : 50
+        },
+
+        {
+            "name" : "energy_3",
+            "compressor" : "SZ3",
+            "mode" : "psnr",
+            "value" : 75
+        }
+    ],
+
+    "databases" : 
+    [
+        {
+            "address" : "192.168.81.85:40347",
+            "protocol" : "ofi+tcp",
+            "provider_id" : 124
+        },
+
+		{
+              "address" : "192.168.81.90:45863",
+              "protocol" : "ofi+tcp",
+             "provider_id" : 124
+        }
+    ]
+}

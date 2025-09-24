@@ -11,8 +11,11 @@
 #include <cstdlib>
 #include <time.h> 
 
+
 #include <yokan/client.h>
 #include <yokan/database.h>
+#include <yokan/cxx/exception.hpp>
+#include <yokan/cxx/database.hpp>
 
 #include <blosc2.h>
 #include <SZ3/api/sz.hpp>
@@ -21,6 +24,50 @@
 #include "timer.hpp"
 #include "utils.hpp"
 
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/if.h>
+
+
+
+inline int output_ip(int world_rank, int world_size) {
+    struct ifaddrs *ifaddr = nullptr, *ifa = nullptr;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        return 1;
+    }
+
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr)
+            continue;
+
+        // Check for IPv4 addresses
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            void *addr_ptr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+            char addr_buffer[INET_ADDRSTRLEN] = {0};
+
+            if (inet_ntop(AF_INET, addr_ptr, addr_buffer, INET_ADDRSTRLEN) == nullptr) {
+                perror("inet_ntop");
+                continue;
+            }
+
+            // Skip loopback and down interfaces
+            if (!(ifa->ifa_flags & IFF_LOOPBACK) && (ifa->ifa_flags & IFF_UP)) {
+                std::cout << "Rank " << world_rank << " of " << world_size
+                          << " | Interface: " << ifa->ifa_name
+                          << " | IPv4 Address: " << addr_buffer << std::endl;
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);  // Always free the allocated memory
+    return 0;
+}
+
 
 class InSitu
 {
@@ -28,6 +75,7 @@ class InSitu
     int myRank, numRanks, numThreads;
 
     std::string jsonFilename;
+    margo_instance_id mid;
 
     int numDatabases;
     std::vector<std::string> db_addresses;
@@ -80,6 +128,7 @@ inline void InSitu::init(int rank, int worldSize, std::string inputJsonFile)
     numDatabases = 0;
     jsonFilename = inputJsonFile;
 
+    output_ip(myRank, worldSize);
 
     std::ifstream jsonFile(inputJsonFile);
     nlohmann::json jsonInput;
@@ -120,14 +169,14 @@ inline int InSitu::loadDatabases()
                 db_addresses.push_back( serverAddr );
 
                 numDatabases++;
-                //std::cout << "database found at: " << serverAddr << std::endl;
+                std::cout << "database found at: " << serverAddr << std::endl;
                 debugLog << "database found at: " << serverAddr << std::endl;
             }
         }
-        //std::cout << "num Databases: " << numDatabases << std::endl;
+        std::cout << myRank << " - num Databases: " << numDatabases << std::endl;
     }
 
-    debugLog << "num Databases: " << numDatabases << std::endl;
+    debugLog << "!!! num Databases: " << numDatabases << std::endl;
     log += debugLog.str();
 
     return 1;
@@ -136,23 +185,27 @@ inline int InSitu::loadDatabases()
 
 inline yk_database_handle_t InSitu::initDB(std::string protocol, std::string serverAddr, int providerId)
 {
-    margo_instance_id mid = margo_init(protocol.c_str(), MARGO_CLIENT_MODE, 0, 0);
+    mid = margo_init(protocol.c_str(), MARGO_CLIENT_MODE, 0, 0);
     assert(mid);
 
     hg_addr_t server_addr = HG_ADDR_NULL;
     std::string svr_addr_str = protocol + "://" + serverAddr;
+    std::cout << myRank << " ~ svr_addr_str: " << svr_addr_str << ", provider id:" <<  providerId << std::endl;
+
     hg_return_t hret = margo_addr_lookup(mid, svr_addr_str.c_str(), &server_addr);
     assert(hret == HG_SUCCESS);
+    std::cout << myRank << " ~ margo_addr_lookup good" << std::endl;
 
     yk_return_t ret;
     yk_client_t client = YOKAN_CLIENT_NULL;
-
     ret = yk_client_init(mid, &client);
     assert(ret == YOKAN_SUCCESS);
+    std::cout << myRank << " ~ yk_client_init good" << std::endl;
 
     yk_database_handle_t db_handle = YOKAN_DATABASE_HANDLE_NULL;
     ret = yk_database_handle_create(client, server_addr, providerId, true, &db_handle);
     assert(ret == YOKAN_SUCCESS);
+    std::cout << myRank << " - All correct in initDB" << std::endl;
 
     return db_handle;
 }
@@ -233,10 +286,16 @@ inline char * InSitu::compressSZ3(float * data, int x_dim, int y_dim, int z_dim,
 inline int InSitu::putValue(int dbIndex, std::string key, std::string value)
 {
     // Storing metadata
+    std::cout << "put value: "<< dbIndex << ", " << key << ", " << value << std::endl;
     yk_return_t ret = yk_put(db_handles[dbIndex], YOKAN_MODE_DEFAULT, key.c_str(), key.length(), value.c_str(), value.length());
 
     if (ret == YOKAN_SUCCESS)
+    {
+        std::cout << "put value done!" << std::endl;
         return 1;
+    }
+
+    
     
     return 0;
 }
@@ -277,6 +336,7 @@ inline std::string InSitu::getYokanValue(int index, std::string key)
 inline char* InSitu::getYokanData(int dbIndex, std::string key)
 {
     Timer clock;
+    std::stringstream debugLog;
     clock.start("put-data");
 
     std::cout << "\ngetYokanData key: " << key << ", dbindex: " << dbIndex << std::endl;
@@ -293,8 +353,9 @@ inline char* InSitu::getYokanData(int dbIndex, std::string key)
     ret = yk_get(db_handles[dbIndex], YOKAN_MODE_DEFAULT, key.data(), key.length(), value_out, &value_out_size);
     
     clock.stop("put-data");
-    //debugLog << "Sending data to Mochi took " << clock.getDuration("put-data") << " s." << std::endl;
-
+    debugLog << "Sending data to Mochi took " << clock.getDuration("put-data") << " s." << std::endl;
+    log += debugLog.str();
+    
     return value_out;
 }
 
@@ -351,7 +412,8 @@ inline void InSitu::sendData(int myRank, int ts, std::string name, std::string t
 
     int dbIndex = ts%numDatabases;
 
-    debugLog << "\n----\nsendData ~ name: " << name << ", ts: " << ts << ", numElements: " << numElements << std::endl;
+    std::cout << "\n----\nsendData ~ name: " << name << ", ts: " << ts << ", numElements: " << numElements << std::endl;
+    debugLog<< "\n----\nsendData ~ name: " << name << ", ts: " << ts << ", numElements: " << numElements << std::endl;
 
     key = key_prefix + "/num_elems";
     value = std::to_string(numElements);
@@ -383,8 +445,8 @@ inline void InSitu::sendData(int myRank, int ts, std::string name, std::string t
     
 
     log += debugLog.str();
-    writeLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
-    //appendLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
+    //writeLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
+    appendLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
 }
 
 
@@ -396,8 +458,8 @@ inline int InSitu::tsDone(int ts)
     putValue(0, key, "done");
 
     log += debugLog.str();
-    writeLog( ("seer_" + simID + "_" + std::to_string(myRank)),  log);
-    //appendLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
+    //writeLog( ("seer_" + simID + "_" + std::to_string(myRank)),  log);
+    appendLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
 
     return 1;
 }
@@ -411,8 +473,8 @@ inline int InSitu::simDone()
     putValue(0, key, "done");
 
     log += debugLog.str();
-    writeLog( ("seer_" + simID + "_" + std::to_string(myRank)),  log);
-    //appendLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
+    //writeLog( ("seer_" + simID + "_" + std::to_string(myRank)),  log);
+    appendLog( ("seer_" + simID + "_" + std::to_string(myRank)), log);
 
     return 1;
 }

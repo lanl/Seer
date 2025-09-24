@@ -1,10 +1,9 @@
 {
-    "sim-id" : "123450",
-    
     "libraries": 
-    {
-        "yokan": "/vast/home/pascalgrosset/spack/opt/spack/linux-rhel8-haswell/gcc-9.4.0/mochi-yokan-0.4.2-hiu7yh7om6nmyc2ahuknpdsov5k64zcj/lib/libyokan-bedrock-module.so"
-    },
+    [
+        "/vast/home/pascalgrosset/software/spack/opt/spack/linux-broadwell/mochi-yokan-0.8.1-njadzndq6fkjnrva3utxazt4psj6pc2v/lib/libyokan-bedrock-module.so"
+    ],
+
     
     "providers": 
     [
@@ -17,21 +16,11 @@
             {
                 "database": 
                 {
-                    "type": "map"
+                    "type": "map",
+                    "config": {}
                 }
                 
             }
-        }
-    ],
-    
-
-    "databases" : 
-    [
-        {
-            "address" : "192.168.81.94:33395",
-            "protocol" : "ofi+tcp",
-            
-            "provider_id" : 124
         }
     ]
 }
